@@ -112,7 +112,7 @@ clean-executables:
 #######################################
 print_targets := pr-objects pr-sources pr-headers pr-c-sources pr-cxx-sources pr-c-objects
 .PONHY: $(print_targets)
-$(print_targets): pr-%:
+pr-%:
 	@echo $($(subst pr-,,$@))
 
 .DEFAULT_GOAL := all
