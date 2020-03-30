@@ -182,18 +182,20 @@ namespace graph_tools {
                        using namespace boost;
             using namespace archive;
             using namespace std;
-
+            std::string file_name = "/tmp/g.arch";
             Graph g = Graph::Generate(10, 1<<10);
             std::cout << "Generated graph (g) with " << g.num_nodes() << " nodes "
                       << "and " << g.num_edges() << " edges" << std::endl;
 
-            g.toFile("g.arch");
-            std::cout << "Dumped (g) to g.arch" << std::endl;
+            g.toFile(file_name);
+            std::cout << "Dumped (g) to " << file_name << std::endl;
 
-            std::cout << "Reading graph (h) from g.arch" << std::endl;
-            Graph h = Graph::FromFile("g.arch");
-            std::cout << "Read graph (h) from g.arch with " << h.num_nodes() << " nodes "
+            std::cout << "Reading graph (h) from " << file_name << std::endl;
+            Graph h = Graph::FromFile(file_name);
+            std::cout << "Read graph (h) from " << file_name << " with " << h.num_nodes() << " nodes "
                       << "and " << h.num_edges() << " edges " << std::endl;
+
+            return 0;
         }
     };
 

@@ -1,4 +1,4 @@
-.PHONY:    all clean
+.PHONY:    all clean test
 .SUFFIXES:
 
 all: libgenerator.so libgraphtools.so
@@ -45,7 +45,6 @@ graphtools-tests-sources := $(addsuffix .cpp, $(graphtools-tests))
 # Lists of all memory modeling tests and their sources
 # Add more tests here (in namespace memory_modeling)
 memory-modeling-test-modules += VectorWithCache
-memory-modeling-test-modules += Cache
 # dont touch
 memory-modeling-tests := $(addsuffix -test,$(memory-modeling-test-modules))
 memory-modeling-tests-sources := $(addsuffix .cpp, $(memory-modeling-tests))
@@ -82,6 +81,8 @@ $(all-tests): libgraphtools.so
 $(all-tests): %: %.cpp
 	$(CXX) $(CXXFLAGS) $(LDFLAGS) -o $@ $<
 	./$@ $($@-argv)
+
+test: $(all-tests)
 
 pr-%:
 	@echo $($(subst pr-,,$@))
