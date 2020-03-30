@@ -17,7 +17,8 @@ libgenerator.so: $(libgenerator.so-headers)
 libgenerator.so: $(libgenerator.so-sources)
 	$(CC) $(CFLAGS) -o $@ $(filter %.c, $^)
 
-libgraphtools.so-sources := $(wildcard $(graphtools-dir)/*.cpp)
+libgraphtools.so-sources += Graph500Data.cpp
+libgraphtools.so-sources += Graph.cpp
 libgraphtools.so-headers := $(wildcard $(graphtools-dir)/*.hpp)
 libgraphtools.so-objects := $(libgraphtools.so-sources:.cpp=.o)
 
@@ -34,14 +35,53 @@ libgraphtools.so: LDFLAGS += -shared
 libgraphtools.so: $(libgraphtools.so-objects)
 	$(CXX) $(LDFLAGS) -o $@ $^
 
-graphtools-tests += Graph500Data
-graphtools-tests += Graph
+# Lists of basic graphtools tests and their sources
+# Add more tests here (in namespace graph_tools)
+graphtools-test-modules += Graph500Data
+graphtools-test-modules += Graph
+graphtools-tests := $(addsuffix -test,$(graphtools-test-modules))
+graphtools-tests-sources := $(addsuffix .cpp, $(graphtools-tests))
 
-$(graphtools-tests): LDFLAGS += -L$(graphtools-dir)
-$(graphtools-tests): LDFLAGS += -lgraphtools -lgenerator
-$(graphtools-tests): LDFLAGS += -Wl,-rpath=$(graphtools-dir)
-$(graphtools-tests): %: %.o
-	$(CXX) $(LDFLAGS) -o $@ $<
+# Lists of all memory modeling tests and their sources
+# Add more tests here (in namespace memory_modeling)
+memory-modeling-test-modules += VectorWithCache
+memory-modeling-test-modules += Cache
+# dont touch
+memory-modeling-tests := $(addsuffix -test,$(memory-modeling-test-modules))
+memory-modeling-tests-sources := $(addsuffix .cpp, $(memory-modeling-tests))
+
+# Lists of all tests and their sources (dont touch these)
+all-tests-sources := $(graphtools-tests-sources)
+all-tests-sources += $(memory-modeling-tests-sources)
+all-tests += $(graphtools-tests) $(memory-modeling-tests)
+
+# Tests that we don't want cleaned (add more as needed)
+#all-tests-no-clean += VectorWithCache
+# Dont touch these
+all-tests-no-clean-tests := $(addsuffix -test,$(all-tests-no-clean))
+all-tests-no-clean-tests-sources := $(addsuffix .cpp,$(all-tests-no-clean-tests))
+
+$(all-tests-sources):             namespaces += graph_tools
+$(memory-modeling-tests-sources): namespaces += memory_modeling
+VectorWithCache-test.cpp:         templates  := <int>
+$(all-tests-sources):
+	@echo "#include <$(@:-test.cpp=.hpp)>" > $@
+	@echo "int main(int argc, char *argv[]) {" >> $@
+	@$(foreach namespace,$(namespaces),\
+	echo    "    using namespace $(namespace);" >> $@;)
+	@echo   "    return $(@:-test.cpp=)$(templates)::Test(argc, argv);" >> $@
+	@echo "}" >> $@
+
+$(all-tests): LDFLAGS += -L$(graphtools-dir)
+$(all-tests): LDFLAGS += -lgenerator -lboost_serialization
+$(all-tests): LDFLAGS += -Wl,-rpath=$(graphtools-dir)
+$(all-tests): CXXFLAGS += -std=c++11 -I$(graphtools-dir)
+$(all-tests): CXXFLAGS += -std=c++11 -I$(generator-dir)
+$(all-tests): libgenerator.so
+$(all-tests): libgraphtools.so
+$(all-tests): %: %.cpp
+	$(CXX) $(CXXFLAGS) $(LDFLAGS) -o $@ $<
+	./$@ $($@-argv)
 
 pr-%:
 	@echo $($(subst pr-,,$@))
@@ -50,4 +90,5 @@ clean:
 	rm -f libgraphtools.so
 	rm -f *.o
 	rm -f *~
-	rm -f $(graphtools-tests)
+	rm -f $(all-tests)
+	rm -f $(filter-out $(all-tests-no-clean-tests-sources), $(all-tests-sources))

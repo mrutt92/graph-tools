@@ -13,6 +13,10 @@
 #include <memory>
 #include <iostream>
 #include <vector>
+#include <string>
+#include <boost/serialization/vector.hpp>
+#include <boost/archive/binary_oarchive.hpp>
+#include <boost/archive/binary_iarchive.hpp>
 
 namespace graph_tools {
 
@@ -54,8 +58,30 @@ namespace graph_tools {
         std::vector<NodeID>& get_degrees()   { return _degrees; }
 
     public:
-        /* Builder functions */
+        /* Serialization */
+        template <class Archive>
+        void serialize(Archive &ar, int file_version) {
+            ar & _offsets;
+            ar & _neighbors;
+            ar & _degrees;
+        }
 
+        void toFile(const std::string & fname) {
+            std::ofstream os (fname);
+            boost::archive::binary_oarchive oa (os);
+            oa << *this;
+            return;
+        }
+
+        static Graph FromFile(const std::string & fname) {
+            std::ifstream is (fname);
+            boost::archive::binary_iarchive ia (is);
+            Graph g;
+            ia >> g;
+            return g;
+        }
+
+        /* Builder functions */
         static Graph FromGraph500Buffer(packed_edge *edges, int64_t nedges, bool transpose = false) {
             // build an adjacency list
             std::map<NodeID, std::list<NodeID>> neighbors;
@@ -152,7 +178,23 @@ namespace graph_tools {
             return Graph::FromGraph500Data(Graph500Data::Generate(scale, nedges, seed1, seed2));
         }
 
-        static int Test(int argc, char *argv[]);
+        static int Test(int argc, char *argv[]) {
+                       using namespace boost;
+            using namespace archive;
+            using namespace std;
+
+            Graph g = Graph::Generate(10, 1<<10);
+            std::cout << "Generated graph (g) with " << g.num_nodes() << " nodes "
+                      << "and " << g.num_edges() << " edges" << std::endl;
+
+            g.toFile("g.arch");
+            std::cout << "Dumped (g) to g.arch" << std::endl;
+
+            std::cout << "Reading graph (h) from g.arch" << std::endl;
+            Graph h = Graph::FromFile("g.arch");
+            std::cout << "Read graph (h) from g.arch with " << h.num_nodes() << " nodes "
+                      << "and " << h.num_edges() << " edges " << std::endl;
+        }
     };
 
 }

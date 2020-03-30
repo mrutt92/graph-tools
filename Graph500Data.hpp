@@ -74,7 +74,7 @@ namespace graph_tools {
     public:
 
         /* Testing */
-        static int Test(int argc, char *argv[]);
+        static int Test(int argc, char *argv[]) {}
 
     };
 
