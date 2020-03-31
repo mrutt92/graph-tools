@@ -20,13 +20,13 @@ namespace graph_tools {
 
             T get(size_t i) const {
                 _cache->load_multi(reinterpret_cast<Cache::Addr>(&_data[i]),
-                                   static_cast<Cache::Addr>(sizeof(_data[i])));
+                                   static_cast<Cache::Addr>(sizeof(T)));
                 return _data[i];
             }
 
             void set(size_t i, T val) {
                 _cache->store_multi(reinterpret_cast<Cache::Addr>(&_data[i]),
-                                    static_cast<Cache::Addr>(sizeof(_data[i])));
+                                    static_cast<Cache::Addr>(sizeof(T)));
                 _data[i] = val;
             }
 
