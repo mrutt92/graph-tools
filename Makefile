@@ -3,8 +3,8 @@
 
 all: libgenerator.so libgraphtools.so
 
-generator-dir := $(CURDIR)/graph500/generator
-graphtools-dir := $(CURDIR)
+graphtools-dir := $(dir $(abspath $(lastword $(MAKEFILE_LIST))))
+generator-dir  := $(graphtools-dir)/graph500/generator
 
 libgenerator.so-sources := $(filter-out %/mrg_transitions.c,$(wildcard $(generator-dir)/*.c))
 libgenerator.so-headers := $(wildcard $(generator-dir)/*.h)
@@ -84,6 +84,16 @@ $(all-tests): %: %.cpp
 
 test: $(all-tests)
 
+interface-ldflags  += -L$(graphtools-dir)
+interface-ldflags  += -Wl,-rpath=$(graphtools-dir)
+interface-ldflags  += -lgraphtools
+interface-ldflags  += -lgenerator
+interface-ldflags  += -lboost_serialization
+
+interface-cxxflags += -std=c++11
+interface-cxxflags += -I$(graphtools-dir)
+interface-cxxflags += -I$(generator-dir)
+
 pr-%:
 	@echo $($(subst pr-,,$@))
 clean:
@@ -93,3 +103,4 @@ clean:
 	rm -f *~
 	rm -f $(all-tests)
 	rm -f $(filter-out $(all-tests-no-clean-tests-sources), $(all-tests-sources))
+
