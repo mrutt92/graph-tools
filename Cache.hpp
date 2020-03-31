@@ -36,10 +36,10 @@ namespace graph_tools {
             static constexpr bool MISS = true;
             static constexpr bool HIT  = false;
 
-            using Set       = uintptr_t;
-            using Way       = uintptr_t;
-            using Addr      = uintptr_t;
-            using Tag       = uintptr_t;
+            using Set       = intptr_t;
+            using Way       = intptr_t;
+            using Addr      = intptr_t;
+            using Tag       = intptr_t;
 
             virtual ~Cache() {};
 
