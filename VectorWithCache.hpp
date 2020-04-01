@@ -1,3 +1,4 @@
+#pragma once
 #include <Cache.hpp>
 #include <vector>
 #include <memory>
