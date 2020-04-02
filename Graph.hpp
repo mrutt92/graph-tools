@@ -14,6 +14,7 @@
 #include <iostream>
 #include <vector>
 #include <string>
+#include <sstream>
 #include <boost/serialization/vector.hpp>
 #include <boost/archive/binary_oarchive.hpp>
 #include <boost/archive/binary_iarchive.hpp>
@@ -71,6 +72,18 @@ namespace graph_tools {
             boost::archive::binary_oarchive oa (os);
             oa << *this;
             return;
+        }
+
+        std::string string() const {
+            std::stringstream ss;
+            for (NodeID src = 0; src < num_nodes(); src++){
+                ss << src << " : ";
+                for (NodeID dst : neighbors(src))
+                    ss << dst << ",";
+
+                ss << "\n";
+            }
+            return ss.str();
         }
 
         static Graph FromFile(const std::string & fname) {
@@ -175,25 +188,50 @@ namespace graph_tools {
         }
 
         static Graph Generate(int scale, int64_t nedges, bool transpose = false, uint64_t seed1 = 2, uint64_t seed2 = 3) {
-            return Graph::FromGraph500Data(Graph500Data::Generate(scale, nedges, seed1, seed2));
+            return Graph::FromGraph500Data(Graph500Data::Generate(scale, nedges, seed1, seed2), transpose);
+        }
+
+        static Graph Tiny(bool transpose = false) {
+            return Generate(6, 1<<6, transpose);
+        }
+
+        static Graph Standard(bool transpose = false) {
+            return Tiny(transpose);
         }
 
         static int Test(int argc, char *argv[]) {
                        using namespace boost;
             using namespace archive;
             using namespace std;
-            std::string file_name = "/tmp/g.arch";
-            Graph g = Graph::Generate(10, 1<<10);
-            std::cout << "Generated graph (g) with " << g.num_nodes() << " nodes "
-                      << "and " << g.num_edges() << " edges" << std::endl;
+            // Serialization
+            {
+                std::string file_name = "/tmp/g.arch";
+                Graph g = Graph::Tiny();
+                std::cout << "Generated graph (g) with " << g.num_nodes() << " nodes "
+                          << "and " << g.num_edges() << " edges" << std::endl;
 
-            g.toFile(file_name);
-            std::cout << "Dumped (g) to " << file_name << std::endl;
+                g.toFile(file_name);
+                std::cout << "Dumped (g) to " << file_name << std::endl;
 
-            std::cout << "Reading graph (h) from " << file_name << std::endl;
-            Graph h = Graph::FromFile(file_name);
-            std::cout << "Read graph (h) from " << file_name << " with " << h.num_nodes() << " nodes "
-                      << "and " << h.num_edges() << " edges " << std::endl;
+                std::cout << "Reading graph (h) from " << file_name << std::endl;
+                Graph h = Graph::FromFile(file_name);
+                std::cout << "Read graph (h) from " << file_name << " with " << h.num_nodes() << " nodes "
+                          << "and " << h.num_edges() << " edges " << std::endl;
+            }
+            // Transpose
+            {
+                Graph fwd = Graph::Tiny();
+                Graph bck = Graph::Tiny(true);
+
+                for (NodeID src = 0; src < fwd.num_nodes(); src++) {
+                    for (NodeID dst : fwd.neighbors(src)) {
+                        // check that src is a neighbor of dst in the transpose graph
+                        auto sources = bck.neighbors(dst);
+                        // assert that we can find src in sources
+                        assert(std::find(sources.begin(), sources.end(), src) != sources.end());
+                    }
+                }
+            }
 
             return 0;
         }
