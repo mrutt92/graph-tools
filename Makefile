@@ -90,6 +90,12 @@ interface-ldflags  += -lgraphtools
 interface-ldflags  += -lgenerator
 interface-ldflags  += -lboost_serialization
 
+interface-libraries += libgraphtools.so
+interface-libraries += libgenerator.so
+
+interface-headers += $(libgraphtools.so-headers)
+interface-headers += $(libgenerator.so-headers)
+
 interface-cxxflags += -std=c++11
 interface-cxxflags += -I$(graphtools-dir)
 interface-cxxflags += -I$(generator-dir)
