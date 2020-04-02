@@ -1,39 +1,16 @@
 .PHONY:    all clean test
 .SUFFIXES:
 
-all: libgenerator.so libgraphtools.so
-
-graphtools-dir := $(dir $(abspath $(lastword $(MAKEFILE_LIST))))
+graphtools-dir := .
 generator-dir  := $(graphtools-dir)/graph500/generator
 
-libgenerator.so-sources := $(filter-out %/mrg_transitions.c,$(wildcard $(generator-dir)/*.c))
-libgenerator.so-headers := $(wildcard $(generator-dir)/*.h)
+all:
 
-libgenerator.so: CFLAGS += -I$(generator-dir)
-libgenerator.so: CFLAGS += -Drestrict=__restrict__
-libgenerator.so: CFLAGS += -fPIC
-libgenerator.so: CFLAGS += -shared
-libgenerator.so: $(libgenerator.so-headers)
-libgenerator.so: $(libgenerator.so-sources)
-	$(CC) $(CFLAGS) -o $@ $(filter %.c, $^)
+include $(graphtools-dir)/libgenerator.mk
+include $(graphtools-dir)/libgraphtools.mk
 
-libgraphtools.so-sources += Graph500Data.cpp
-libgraphtools.so-sources += Graph.cpp
-libgraphtools.so-headers := $(wildcard $(graphtools-dir)/*.hpp)
-libgraphtools.so-objects := $(libgraphtools.so-sources:.cpp=.o)
-
-$(libgraphtools.so-objects): CXXFLAGS += -std=c++11
-$(libgraphtools.so-objects): CXXFLAGS += -I$(graphtools-dir)
-$(libgraphtools.so-objects): CXXFLAGS += -I$(generator-dir)
-$(libgraphtools.so-objects): CXXFLAGS += -fPIC
-$(libgraphtools.so-objects): $(libgenerator.so-headers)
-$(libgraphtools.so-objects): $(libgraphtools.so-headers)
-$(libgraphtools.so-objects): %.o: %.cpp
-	$(CXX) $(CXXFLAGS) -c $<
-
-libgraphtools.so: LDFLAGS += -shared
-libgraphtools.so: $(libgraphtools.so-objects)
-	$(CXX) $(LDFLAGS) -o $@ $^
+all: $(graphtools-dir)/libgenerator.so
+all: $(graphtools-dir)/libgraphtools.so
 
 # Lists of basic graphtools tests and their sources
 # Add more tests here (in namespace graph_tools)
@@ -71,42 +48,24 @@ $(all-tests-sources):
 	@echo   "    return $(@:-test.cpp=)$(templates)::Test(argc, argv);" >> $@
 	@echo "}" >> $@
 
-$(all-tests): LDFLAGS += -L$(graphtools-dir)
-$(all-tests): LDFLAGS += -lgenerator -lboost_serialization
-$(all-tests): LDFLAGS += -Wl,-rpath=$(graphtools-dir)
-$(all-tests): CXXFLAGS += -std=c++11 -I$(graphtools-dir)
-$(all-tests): CXXFLAGS += -std=c++11 -I$(generator-dir)
-$(all-tests): libgenerator.so
-$(all-tests): libgraphtools.so
+$(all-tests): LDFLAGS += $(libgraphtools-interface-ldflags)
+$(all-tests): CXXFLAGS += $(libgraphtools-interface-cxxflags)
+$(all-tests): $(libgraphtools-interface-libraries)
+$(all-tests): $(libgraphtools-interface-headers)
 $(all-tests): %: %.cpp
 	$(CXX) $(CXXFLAGS) $(LDFLAGS) -o $@ $<
 	./$@ $($@-argv)
 
 test: $(all-tests)
 
-interface-ldflags  += -L$(graphtools-dir)
-interface-ldflags  += -Wl,-rpath=$(graphtools-dir)
-interface-ldflags  += -lgraphtools
-interface-ldflags  += -lgenerator
-interface-ldflags  += -lboost_serialization
-
-interface-libraries += libgraphtools.so
-interface-libraries += libgenerator.so
-
-interface-headers += $(libgraphtools.so-headers)
-interface-headers += $(libgenerator.so-headers)
-
-interface-cxxflags += -std=c++11
-interface-cxxflags += -I$(graphtools-dir)
-interface-cxxflags += -I$(generator-dir)
-
 pr-%:
 	@echo $($(subst pr-,,$@))
+
 clean:
-	rm -f libgenerator.so
-	rm -f libgraphtools.so
-	rm -f *.o
-	rm -f *~
+	rm -f $(graphtools-dir)/libgenerator.so
+	rm -f $(graphtools-dir)/libgraphtools.so
+	rm -f $(graphtools-dir)/*.o
+	rm -f $(graphtools-dir)*~
 	rm -f $(all-tests)
 	rm -f $(filter-out $(all-tests-no-clean-tests-sources), $(all-tests-sources))
 
