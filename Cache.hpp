@@ -6,6 +6,7 @@
 #include <stdint.h>
 #include <list>
 #include <map>
+#include <memory>
 
 namespace graph_tools {
     namespace memory_modeling {
@@ -35,7 +36,8 @@ namespace graph_tools {
         public:
             static constexpr bool MISS = true;
             static constexpr bool HIT  = false;
-
+            using Ptr       = std::shared_ptr<Cache>;
+            using CPtr      = std::shared_ptr<const Cache>;
             using Set       = intptr_t;
             using Way       = intptr_t;
             using Addr      = intptr_t;
@@ -335,5 +337,17 @@ namespace graph_tools {
                 return r;
             }
         };
+
+        static Cache::Ptr HammerBladeCache() {
+            int x = 16;
+            int y = 8;
+            int caches = 16 * 2; // top n bottom
+            int sets = 64;
+            int ways = 8;
+            int block_size = 8*4; // 8 4-byte words
+            return std::make_shared<LRUCache>(caches * sets * ways * block_size,
+                                              block_size,
+                                              ways);
+        }
     }
 }
