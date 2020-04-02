@@ -195,8 +195,12 @@ namespace graph_tools {
             return Generate(6, 1<<6, transpose);
         }
 
+        static Graph Kila(bool transpose = false) {
+            return Generate(16, 16<<16, transpose);
+        }
+
         static Graph Standard(bool transpose = false) {
-            return Tiny(transpose);
+            return Kila(transpose);
         }
 
         static int Test(int argc, char *argv[]) {
