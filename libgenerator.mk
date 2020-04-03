@@ -9,12 +9,14 @@ libgenerator.so-headers := $(wildcard $(generator-dir)/*.h)
 libgenerator-interface-ldflags += -L$(graphtools-dir)
 libgenerator-interface-ldflags += -Wl,-rpath=$(graphtools-dir)
 libgenerator-interface-ldflags += -lgenerator
+libgenerator-interface-ldflags += -lgomp
 
 libgenerator-interface-cxxflags += -I$(generator-dir)
 libgenerator-cxxflags += -fPIC
 libgenerator-cxxflags += -Drestrict=__restrict__
 libgenerator-cxxflags += -shared
 libgenerator-cxxflags += -O3
+libgenerator-cxxflags += -fopenmp
 
 libgenerator-interface-headers := $(libgenerator.so-headers)
 libgenerator-interface-libraries := $(graphtools-dir)/libgenerator.so
