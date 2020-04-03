@@ -220,8 +220,16 @@ namespace graph_tools {
             return Generate(16, 16<<16, transpose);
         }
 
+        static Graph Mega(bool transpose = false) {
+            return Generate(20, 16<<20, transpose);
+        }
+
+        static Graph Giga(bool transpose = false) {
+            return Generate(30, 1<<30, transpose);
+        }
+
         static Graph Standard(bool transpose = false) {
-            return Kila(transpose);
+            return Mega(transpose);
         }
 
         static int Test(int argc, char *argv[]) {
