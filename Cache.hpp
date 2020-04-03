@@ -46,7 +46,9 @@ namespace graph_tools {
             virtual ~Cache() {};
 
             Cache(Addr size, Addr block_size, Addr assoc = 2) :
-                _assoc(assoc), _block_size(block_size){
+                _assoc(assoc),
+                _block_size(block_size),
+                _cold_misses(0) {
 
                 Addr sets = size/(_block_size * _assoc);
                 for (Addr i = 0; i < sets; i++)
@@ -98,12 +100,13 @@ namespace graph_tools {
             }
 
             std::string stats_csv_header() const {
-                return "hits,misses,flushes";
+                return "hits,misses,cold_misses,flushes";
             }
             std::string stats_csv() const {
                 std::stringstream ss;
                 ss << sum_hits() << ",";
                 ss << sum_misses() << ",";
+                ss << compulsory_misses() << ",";
                 ss << sum_flushes() << ",";
                 return ss.str();
             }
@@ -226,6 +229,7 @@ namespace graph_tools {
             };
 
             std::map<Addr, Stats> _stats;
+            int64_t _cold_misses;
 
             Stats & find_stat(Addr addr) {
                 auto p = _stats.find(addr);
@@ -238,11 +242,18 @@ namespace graph_tools {
 
             }
 
+            bool is_cold_miss(Addr addr) const {
+                auto p = _stats.find(addr);
+                return p == _stats.end();
+            }
+
             void record_hit(Addr addr) {
                 auto &stat = find_stat(block_from_addr(addr));
                 stat.hits++;
             }
+
             void record_miss(Addr addr) {
+                if (is_cold_miss(addr)) _cold_misses++;
                 auto &stat = find_stat(block_from_addr(addr));
                 stat.misses++;
             }
@@ -254,6 +265,10 @@ namespace graph_tools {
 
         public:
             /* stats api */
+            int64_t compulsory_misses() const {
+                return _cold_misses;
+            }
+
             int64_t sum_hits(void) const {
                 int64_t sum = 0;
                 for (auto &p : _stats)
