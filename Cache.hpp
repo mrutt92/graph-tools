@@ -356,7 +356,7 @@ namespace graph_tools {
         static Cache::Ptr HammerBladeCache() {
             int x = 16;
             int y = 8;
-            int caches = 16 * 2; // top n bottom
+            int caches = x * 2; // top n bottom
             int sets = 64;
             int ways = 8;
             int block_size = 8*4; // 8 4-byte words
