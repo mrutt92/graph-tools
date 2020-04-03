@@ -49,6 +49,27 @@ namespace graph_tools {
         NodeID degree(NodeID v) const { return _degrees[v]; }
         NodeID offset(NodeID v) const { return _offsets[v]; }
 
+        Graph transpose() const {
+            std::vector<std::list<NodeID>> adjl(num_nodes());
+            Graph t;
+            for (NodeID src = 0; src < num_nodes(); src++) {
+                for (NodeID dst : neighbors(src)) {
+                    adjl[dst].push_back(src);
+                }
+            }
+
+            // sort each list
+            for (auto & l : adjl) l.sort();
+
+            for (NodeID dst = 0; dst < num_nodes(); dst++) {
+                t._offsets.push_back(t._neighbors.size());
+                t._degrees.push_back(adjl[dst].size());
+                t._neighbors.insert(t._neighbors.end(), adjl[dst].begin(), adjl[dst].end());
+            }
+
+            return t;
+        }
+
     private:
         std::vector<NodeID> _offsets;
         std::vector<NodeID> _neighbors;
@@ -222,11 +243,24 @@ namespace graph_tools {
                 std::cout << "Read graph (h) from " << file_name << " with " << h.num_nodes() << " nodes "
                           << "and " << h.num_edges() << " edges " << std::endl;
             }
-            // Transpose
+            // Transpose by static methods
             {
                 Graph fwd = Graph::Tiny();
                 Graph bck = Graph::Tiny(true);
 
+                for (NodeID src = 0; src < fwd.num_nodes(); src++) {
+                    for (NodeID dst : fwd.neighbors(src)) {
+                        // check that src is a neighbor of dst in the transpose graph
+                        auto sources = bck.neighbors(dst);
+                        // assert that we can find src in sources
+                        assert(std::find(sources.begin(), sources.end(), src) != sources.end());
+                    }
+                }
+            }
+            // Transpose by member function
+            {
+                Graph fwd = Graph::Tiny();
+                Graph bck = fwd.transpose();
                 for (NodeID src = 0; src < fwd.num_nodes(); src++) {
                     for (NodeID dst : fwd.neighbors(src)) {
                         // check that src is a neighbor of dst in the transpose graph
