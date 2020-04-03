@@ -4,23 +4,28 @@
 #include <cstdint>
 #include <cstring>
 #include <cstdlib>
+#include <cstdio>
+#include <string>
+#include <stdexcept>
 #include <new>
-
+#include <sys/stat.h>
+#include <assert.h>
+#include <fstream>
 namespace graph_tools {
 
     class Graph500Data {
     public:
         friend class Graph;
-        Graph500Data(packed_edge *edges = nullptr, int64_t nedges = 0) :
+        Graph500Data(packed_edge *edges = NULL, int64_t nedges = 0) :
             _edges(edges), _nedges(nedges) {}
 
         ~Graph500Data() {
-            if (_edges != nullptr) free(_edges);
+            if (_edges != NULL) free(_edges);
         }
 
         Graph500Data(const Graph500Data &other) {
             _edges = reinterpret_cast<packed_edge*>(malloc(sizeof(*_edges) * other._nedges));
-            if (_edges == nullptr)
+            if (_edges == NULL)
                 throw std::bad_alloc();
             memcpy(_edges, other._edges, other._nedges);
             _nedges = other._nedges;
@@ -28,7 +33,7 @@ namespace graph_tools {
 
         Graph500Data & operator=(const Graph500Data &other) {
             _edges = reinterpret_cast<packed_edge*>(malloc(sizeof(*_edges) * other._nedges));
-            if (_edges == nullptr)
+            if (_edges == NULL)
                 throw std::bad_alloc();
             memcpy(_edges, other._edges, other._nedges);
             _nedges = other._nedges;
@@ -38,16 +43,59 @@ namespace graph_tools {
         Graph500Data(Graph500Data &&other) {
             _edges = other._edges;
             _nedges = other._nedges;
-            other._edges = nullptr;
+            other._edges = NULL;
             other._nedges = 0;
         }
 
         Graph500Data & operator=(Graph500Data &&other) {
             _edges = other._edges;
             _nedges = other._nedges;
-            other._edges = nullptr;
+            other._edges = NULL;
             other._nedges = 0;
             return *this;
+        }
+
+        void toFile(const std::string & file_name) {
+            std::ofstream ofs(file_name);
+            ofs.write(reinterpret_cast<char*>(_edges), sizeof(*_edges) * _nedges);
+        }
+
+        static Graph500Data FromFile(const std::string & file_name) {
+            struct stat st;
+            int err;
+
+            // stat the file
+            if ((err = stat(file_name.c_str(), &st)) != 0) {
+                std::string errm(strerror(errno));
+                throw std::runtime_error("Failed to stat '"
+                                         + file_name
+                                         + "': "
+                                         + errm);
+            }
+
+            // open using stdio
+            FILE *f = fopen(file_name.c_str(), "rb");
+            if (f == NULL) {
+                std::string errm(strerror(errno));
+                throw std::runtime_error("Failed to open '"
+                                         + file_name
+                                         + "': "
+                                         + errm);
+            }
+
+            // allocate a buffer with malloc
+            packed_edge *edge = reinterpret_cast<packed_edge*>(malloc(st.st_size));
+            if (edge == NULL) throw std::bad_alloc();
+
+            // read edge list
+            fread(edge, st.st_size, 1, f);
+
+            int64_t nedges = st.st_size/sizeof(*edge);
+            assert(st.st_size % sizeof(*edge));
+
+            fclose(f);
+
+            return Graph500Data(edge, nedges);
         }
 
         static Graph500Data Generate(int scale, int64_t nedges, uint64_t seed1 = 2, uint64_t seed2 = 3) {
@@ -66,6 +114,8 @@ namespace graph_tools {
 
         packed_edge *begin() { return _edges; }
         packed_edge *end()   { return _edges + _nedges; }
+
+        int64_t num_edges() const { return _nedges; }
 
     private:
         packed_edge * _edges;

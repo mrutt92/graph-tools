@@ -195,10 +195,11 @@ namespace graph_tools {
             //  get the size of the file
             ifs.seekg(0, ifs.end);
             auto sz = ifs.tellg();
+            ifs.seekg(0, ifs.beg);
 
             // resize so we can do a block read
             edges.resize(sz/sizeof(packed_edge));
-            ifs.read(reinterpret_cast<char*>(edges.data()), sz);
+            ifs.read(reinterpret_cast<char*>(&edges[0]), sz);
 
             // build from the read buffer
             return Graph::FromGraph500Buffer(edges.data(), edges.size());
