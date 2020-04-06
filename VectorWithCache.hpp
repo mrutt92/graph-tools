@@ -115,6 +115,29 @@ namespace graph_tools {
                     assert(dram1.data()[3] == 7);
                 }
 
+                // Two vectors
+                {
+                    // A cache that can hold a single element
+                    std::shared_ptr<LRUCache> cache
+                        = std::make_shared<LRUCache>(2*sizeof(T), 2*sizeof(T), 1);
+
+                    VectorWithCache<T> dram(cache);
+                    dram.data() = {0, 1, 2, 3};
+
+                    int x;
+                    x = dram.get(0);
+                    x = dram.get(1);
+                    x = dram.get(2);
+
+                    assert(cache->sum_hits() == 1);
+                    assert(cache->sum_misses() == 2);
+                    assert(cache->sum_flushes() == 0);
+                    assert(dram.data()[0] == 0);
+                    assert(dram.data()[1] == 1);
+                    assert(dram.data()[2] == 2);
+                    assert(dram.data()[3] == 3);
+                }
+
                 return 0;
             }
 
