@@ -7,41 +7,54 @@ namespace graph_tools {
 
     using VertexSet = std::set<Graph::NodeID>;
 
-    class VertexSetBuilder {
+    class BFSVertexSetBuilder {
     public:
-        virtual VertexSet build(const Graph & graph) = 0;
+        BFSVertexSetBuilder() {}
+        void build(const Graph & graph, Graph::NodeID root = 0) {
+            _next.clear();
+            _visited.clear();
+            _frontier.clear();
+
+            _visited.insert(root);
+            _frontier.insert(root);
+
+            while (!done(graph)) {
+                for (Graph::NodeID src : _frontier) {
+                    for (Graph::NodeID dst : graph.neighbors(src)) {
+                        if (_visited.find(dst) != _visited.end()) continue;
+                        _visited.insert(dst);
+                        _next.insert(dst);
+                    }
+                }
+                _frontier.clear();
+                _frontier = std::move(_next);
+            }
+        }
+        VertexSet & get_active()  { return _frontier; }
+        VertexSet & get_visited() { return _visited; }
+        virtual bool done(const Graph & graph) { return _frontier.empty(); }
+    protected:
+        VertexSet _visited;
+        VertexSet _frontier;
+        VertexSet _next;
     };
 
-    class VertexSetBuilderBase : public VertexSetBuilder {
+    class EdgeThresholdBFSVertexSetBuilder : public BFSVertexSetBuilder {
     public:
-        VertexSet build(const Graph & graph) {
-            VertexSet set;
-            while (!done(graph, set)) insert_next_vertex(graph, set);
-            return set;
+        EdgeThresholdBFSVertexSetBuilder(double threshold = 0.05) :
+            _threshold(threshold),
+            BFSVertexSetBuilder()  {
         }
 
-        virtual void insert_next_vertex(const Graph &graph, VertexSet &set) = 0;
-        virtual bool done(const Graph &graph, const VertexSet &set) const = 0;
-    };
-
-    template <typename DoneFunction>
-    class RandomVertexSetBuilder final : public VertexSetBuilderBase {
-    public:
-        RandomVertexSetBuilder(DoneFunction done_f):
-            _done_f(done_f) {
-            srand(0);
-        }
-        void insert_next_vertex(const Graph &graph, VertexSet &set) {
-            set.insert(rand()%graph.num_nodes());
-        }
-        bool done (const Graph& graph, const VertexSet &set ) const {
-            return _done_f(graph, set);
+        virtual bool done(const Graph &graph) {
+            Graph::NodeID sum = 0;
+            for (Graph::NodeID src : _frontier) {
+                sum += graph.degree(src);
+            }
+            return _frontier.empty() || sum > graph.num_edges() * _threshold;
         }
 
     private:
-        DoneFunction _done_f;
-    };
-
-    class BFSVertexSetBuilder : public VertexSetBuilderBase {
+        double _threshold;
     };
 }
