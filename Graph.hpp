@@ -49,6 +49,15 @@ namespace graph_tools {
         NodeID degree(NodeID v) const { return _degrees[v]; }
         NodeID offset(NodeID v) const { return _offsets[v]; }
 
+        NodeID node_with_max_degree() const {
+            NodeID max = 0;
+            for (NodeID v = 0; v < num_nodes(); v++) {
+                if (degree(v) > degree(max))
+                    max = v;
+            }
+            return max;
+        }
+
         Graph transpose() const {
             std::vector<std::list<NodeID>> adjl(num_nodes());
             Graph t;
