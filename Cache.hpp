@@ -177,42 +177,42 @@ namespace graph_tools {
             }
 
             /* compute the remaining bytes in block from address */
-            Addr block_remainder_from_addr(Addr addr) {
+            Addr block_remainder_from_addr(Addr addr) const {
                 return block_size() - block_offset_from_addr(addr);
             }
 
             /* compute offset in block from address */
-            Addr block_offset_from_addr(Addr addr) {
+            Addr block_offset_from_addr(Addr addr) const {
                 return addr % block_size();
             }
 
             /* compute block address without block offset */
-            Addr block_addr_from_addr(Addr addr) {
+            Addr block_addr_from_addr(Addr addr) const {
                 return addr - block_offset_from_addr(addr);
             }
 
             /* compute tag data from addr */
-            Tag tag_from_addr(Addr addr) {
+            Tag tag_from_addr(Addr addr) const {
                 return (addr/block_size()) / sets();
             }
 
             /* compute set index from addr */
-            Set set_from_addr(Addr addr) {
+            Set set_from_addr(Addr addr) const {
                 return (addr/block_size()) % sets();
             }
 
             /* compute the block id from the address */
-            Addr block_from_addr(Addr addr) {
+            Addr block_from_addr(Addr addr) const {
                 return addr / block_size();
             }
 
             /* compute the block id from the set and tag */
-            Addr block_from_set_and_tag(Set set, Tag tag) {
+            Addr block_from_set_and_tag(Set set, Tag tag) const {
                 return (tag * sets()) + set;
             }
 
             /* compute the address from the set and tag */
-            Addr addr_from_set_and_tag(Set set, Tag tag) {
+            Addr addr_from_set_and_tag(Set set, Tag tag) const {
                 return block_from_set_and_tag(set, tag) * block_size();
             }
 
@@ -243,7 +243,7 @@ namespace graph_tools {
             }
 
             bool is_cold_miss(Addr addr) const {
-                auto p = _stats.find(addr);
+                auto p = _stats.find(block_from_addr(addr));
                 return p == _stats.end();
             }
 
