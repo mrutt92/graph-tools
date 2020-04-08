@@ -364,5 +364,17 @@ namespace graph_tools {
                                               block_size,
                                               ways);
         }
+
+        static Cache::Ptr HammerBladeCache16() {
+            int x = 16;
+            int y = 8;
+            int caches = x * 2; // top n bottom
+            int sets = 64;
+            int ways = 4;
+            int block_size = 16*4; // 16 4-byte words
+            return std::make_shared<LRUCache>(caches * sets * ways * block_size,
+                                              block_size,
+                                              ways);
+        }
     }
 }
