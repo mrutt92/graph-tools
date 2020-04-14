@@ -6,14 +6,19 @@ namespace graph_tools {
     class BFS {
     public:
         BFS(Graph* g = nullptr) :
-            _g(g)
+            _g(g),
+            _traversed(0)
             {}
 
         Graph*& graph() { return _g; }
 
         void run(Graph::NodeID root, int iter, bool forward = true) {
+            _visited.clear();
+            _active.clear();
+
             _visited.insert(root);
             _active.insert(root);
+            _traversed = 0;
 
             if (forward) {
                 run_forward(root, iter);
@@ -29,6 +34,7 @@ namespace graph_tools {
                 for (auto src : _active) {
                     for (auto dst : _g->neighbors(src)) {
                         // skip visited
+                        _traversed += 1;
                         if (_visited.find(dst) != _visited.end())
                             continue;
                         // update
@@ -49,6 +55,7 @@ namespace graph_tools {
                     // skip visited
                     if (_visited.find(dst) != _visited.end()) break;
                     for (auto src : _r.neighbors(dst)) {
+                        _traversed += 1;
                         // skip inactive
                         if (_active.find(src) == _active.end()) continue;
                         // update
@@ -61,12 +68,15 @@ namespace graph_tools {
             }
         }
 
+    public:
         std::set<Graph::NodeID> & visited() { return _visited; }
         std::set<Graph::NodeID> & active()  { return _active; }
+        Graph::NodeID traversed() const { return _traversed; }
 
     private:
         Graph*  _g;
         std::set<Graph::NodeID> _visited;
         std::set<Graph::NodeID> _active;
+        Graph::NodeID _traversed;
     };
 }
