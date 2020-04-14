@@ -53,7 +53,7 @@ namespace graph_tools {
                 std::set<Graph::NodeID> _next;
                 for (Graph::NodeID dst = 0; dst < _g->num_nodes(); dst++) {
                     // skip visited
-                    if (_visited.find(dst) != _visited.end()) break;
+                    if (_visited.find(dst) != _visited.end()) continue;
                     for (auto src : _r.neighbors(dst)) {
                         _traversed += 1;
                         // skip inactive
