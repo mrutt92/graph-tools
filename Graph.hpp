@@ -226,6 +226,10 @@ namespace graph_tools {
             return Generate(6, 1<<6, transpose);
         }
 
+        static Graph Small(bool transpose = false) {
+            return Generate(10, 10<<10, transpose);
+        }
+
         static Graph Kila(bool transpose = false) {
             return Generate(16, 16<<16, transpose);
         }
