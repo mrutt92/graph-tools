@@ -58,6 +58,22 @@ namespace graph_tools {
             return max;
         }
 
+        NodeID node_with_degree(NodeID target) const {
+            for (NodeID v = 0; v < num_nodes(); v++) {
+                if (degree(v) == target)
+                    return v;
+            }
+            return 0;
+        }
+
+        NodeID node_with_avg_degree() const {
+            return node_with_degree(avg_degree());
+        }
+
+        NodeID avg_degree() const {
+            return static_cast<NodeID>(static_cast<double>(num_edges())/num_nodes());
+        }
+
         Graph transpose() const {
             std::vector<std::list<NodeID>> adjl(num_nodes());
             Graph t;
