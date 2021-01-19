@@ -15,10 +15,11 @@
 #include <vector>
 #include <string>
 #include <sstream>
+#if 0
 #include <boost/serialization/vector.hpp>
 #include <boost/archive/binary_oarchive.hpp>
 #include <boost/archive/binary_iarchive.hpp>
-
+#endif
 namespace graph_tools {
 
     class Graph {
@@ -105,6 +106,7 @@ namespace graph_tools {
         std::vector<NodeID>& get_degrees()   { return _degrees; }
 
     public:
+#if 0
         /* Serialization */
         template <class Archive>
         void serialize(Archive &ar, int file_version) {
@@ -120,6 +122,15 @@ namespace graph_tools {
             return;
         }
 
+        static Graph FromFile(const std::string & fname) {
+            std::ifstream is (fname);
+            boost::archive::binary_iarchive ia (is);
+            Graph g;
+            ia >> g;
+            return g;
+        }
+
+#endif
         std::string string() const {
             std::stringstream ss;
             for (NodeID src = 0; src < num_nodes(); src++){
@@ -130,14 +141,6 @@ namespace graph_tools {
                 ss << "\n";
             }
             return ss.str();
-        }
-
-        static Graph FromFile(const std::string & fname) {
-            std::ifstream is (fname);
-            boost::archive::binary_iarchive ia (is);
-            Graph g;
-            ia >> g;
-            return g;
         }
 
         /* Builder functions */
@@ -263,9 +266,12 @@ namespace graph_tools {
         }
 
         static int Test(int argc, char *argv[]) {
-                       using namespace boost;
+            #if 0
+            using namespace boost;
             using namespace archive;
+            #endif
             using namespace std;
+            #if 0
             // Serialization
             {
                 std::string file_name = "/tmp/g.arch";
@@ -281,6 +287,7 @@ namespace graph_tools {
                 std::cout << "Read graph (h) from " << file_name << " with " << h.num_nodes() << " nodes "
                           << "and " << h.num_edges() << " edges " << std::endl;
             }
+            #endif
             // Transpose by static methods
             {
                 Graph fwd = Graph::Tiny();

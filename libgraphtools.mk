@@ -14,7 +14,7 @@ libgraphtools.so-objects := $(notdir $(libgraphtools.so-sources:.cpp=.o))
 # ldflags for executables and libraries that use libgraphtools
 libgraphtools-interface-ldflags += $(libgenerator-interface-ldflags)
 libgraphtools-interface-ldflags += -L$(graphtools-dir)
-libgraphtools-interface-ldflags += -lgraphtools -lboost_serialization
+libgraphtools-interface-ldflags += -lgraphtools #-lboost_serialization
 ifeq ($(shell uname),Darwin)
 libgraphtools-interface-ldflags += -Wl,-rpath,$(graphtools-dir)
 else
@@ -24,7 +24,8 @@ endif
 # ldflags for linking libgraphstools.so
 libgraphtools-ldflags += $(libgenerator-interface-ldflags)
 libgraphtools-ldflags += -shared
-libgraphtools-ldflags += -lboost_serialization
+#libgraphtools-ldflags += -lboost_serialization
+#libgraphtools-ldflags += -lboost_exception
 
 # cxxflags for executables and libraries that use libgraphtools
 libgraphtools-interface-cxxflags += $(libgenerator-interface-cxxflags)

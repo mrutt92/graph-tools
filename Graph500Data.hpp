@@ -8,6 +8,7 @@
 #include <string>
 #include <stdexcept>
 #include <new>
+#include <vector>
 #include <sys/stat.h>
 #include <assert.h>
 #include <fstream>
