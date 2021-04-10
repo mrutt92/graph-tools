@@ -230,6 +230,49 @@ namespace graph_tools {
             return g;
         }
 
+        /**
+         * Graph with uniform degree
+         */
+        static
+        WGraph Uniform(int n_nodes, int n_edges) {
+            std::vector<packed_edge> edges(n_edges);
+            std::vector<float> weights(n_edges);
+            std::vector<NodeID> nodes;
+            std::uniform_real_distribution<float> dist(0.0,1.0);
+            std::uniform_int_distribution<int> idist(0, n_nodes-1);
+            std::default_random_engine gen;            
+            nodes.reserve(n_nodes);
+
+            for (int i = 0; i < n_nodes; i++)
+                nodes.push_back(i);
+
+            std::random_shuffle(nodes.begin(), nodes.end());
+            
+            int degree = n_edges/n_nodes;
+            int rem = n_edges%n_nodes;
+
+            int e_i = 0;
+            int dst_i = 0;
+            for (int src = 0; src < n_nodes; src++){
+                for (int e = 0; e < degree; e++) {
+                    write_edge(&edges[e_i], src, nodes[(dst_i++%n_nodes)]);
+                    weights[e_i] = dist(gen);
+                    e_i++;
+                }
+            }
+
+            // fill out the remainder
+            for (int e = 0; e < rem; e++) {
+                int src = nodes[dst_i++%n_nodes];
+                int dst = nodes[dst_i++%n_nodes];
+                write_edge(&edges[e_i], src, dst);
+                weights[e_i] = dist(gen);
+                e_i++;
+            }
+            
+            return WGraph::FromGraph500Buffer(&edges[0], &weights[0], n_edges);
+        }
+
         static
         WGraph List(int n_nodes, int n_edges) {
             std::vector<packed_edge> edges(n_edges);
@@ -349,6 +392,18 @@ namespace graph_tools {
                 std::cout << wg.to_string() << std::endl;
                 std::cout << wg.transpose().to_string() << std::endl;
             }
+            {
+                std::cout << "Making uniform graph |V| = 10, |E|=32" << std::endl;
+                WGraph wg = WGraph::Uniform(10, 32);
+                std::cout << wg.to_string() << std::endl;
+                std::cout << wg.transpose().to_string() << std::endl;
+            }
+            {
+                std::cout << "Making uniform graph |V| = 10K, |E|=32K" << std::endl;
+                WGraph wg = WGraph::Uniform(10*1000, 32*1000);
+                std::cout << wg.to_string() << std::endl;
+                std::cout << wg.transpose().to_string() << std::endl;
+            }            
             return 0;
         }
     };
