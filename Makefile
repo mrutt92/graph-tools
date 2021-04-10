@@ -17,6 +17,8 @@ all: $(graphtools-dir)/libgraphtools.so
 graphtools-test-modules += Graph500Data
 graphtools-test-modules += Graph
 graphtools-test-modules += WGraph
+graphtools-test-modules += FastDijkstra
+graphtools-test-modules += Dijkstra
 graphtools-tests := $(addsuffix -test,$(graphtools-test-modules))
 graphtools-tests-sources := $(addsuffix .cpp, $(graphtools-tests))
 

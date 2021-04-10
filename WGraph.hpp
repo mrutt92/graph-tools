@@ -238,7 +238,7 @@ namespace graph_tools {
             std::vector<packed_edge> edges(n_edges);
             std::vector<float> weights(n_edges);
             std::vector<NodeID> nodes;
-            std::uniform_real_distribution<float> dist(0.0,1.0);
+            std::uniform_real_distribution<float> dist(0.99,1.01);
             std::uniform_int_distribution<int> idist(0, n_nodes-1);
             std::default_random_engine gen;            
             nodes.reserve(n_nodes);
