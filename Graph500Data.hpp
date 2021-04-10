@@ -17,6 +17,7 @@ namespace graph_tools {
     class Graph500Data {
     public:
         friend class Graph;
+        friend class WGraph;
         Graph500Data(packed_edge *edges = NULL, int64_t nedges = 0) :
             _edges(edges), _nedges(nedges) {}
 

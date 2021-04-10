@@ -16,6 +16,7 @@ all: $(graphtools-dir)/libgraphtools.so
 # Add more tests here (in namespace graph_tools)
 graphtools-test-modules += Graph500Data
 graphtools-test-modules += Graph
+graphtools-test-modules += WGraph
 graphtools-tests := $(addsuffix -test,$(graphtools-test-modules))
 graphtools-tests-sources := $(addsuffix .cpp, $(graphtools-tests))
 

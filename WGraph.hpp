@@ -73,20 +73,22 @@ namespace graph_tools {
 
         WGraph transpose() const {
             std::vector<std::list<NodeID>> adjl(num_nodes());
+            std::vector<std::list<float>> wadjl(num_nodes());
             WGraph t;
             for (NodeID src = 0; src < num_nodes(); src++) {
-                for (NodeID dst : neighbors(src)) {
+                for (NodeID dst_i = 0; dst_i < degree(src); dst_i++) {
+                    NodeID dst = _neighbors[_offsets[src]+dst_i];
+                    float  w   = _weights  [_offsets[src]+dst_i];
                     adjl[dst].push_back(src);
+                    wadjl[dst].push_back(w);
                 }
             }
-
-            // sort each list
-            for (auto & l : adjl) l.sort();
 
             for (NodeID dst = 0; dst < num_nodes(); dst++) {
                 t._offsets.push_back(t._neighbors.size());
                 t._degrees.push_back(adjl[dst].size());
                 t._neighbors.insert(t._neighbors.end(), adjl[dst].begin(), adjl[dst].end());
+                t._weights.insert(t._weights.end(), wadjl[dst].begin(), wadjl[dst].end());
             }
 
             return t;
@@ -101,6 +103,16 @@ namespace graph_tools {
         std::vector<NodeID>& get_offsets()   { return _offsets; }
         std::vector<NodeID>& get_neighbors() { return _neighbors; }
         std::vector<NodeID>& get_degrees()   { return _degrees; }
+        std::vector<float> & get_weights()   { return _weights; }
+
+        std::vector<std::pair<int,float>> wneighbors(NodeID v) const {
+            std::vector<std::pair<int,float>> r;
+            int dst_0 = _offsets[v];
+            for (int dst_i = 0; dst_i < degree(v); dst_i++) {
+                r.push_back({_neighbors[dst_0+dst_i], _weights[dst_0+dst_i]});
+            }
+            return r;
+        }
 
     public:
 #if 0
@@ -220,32 +232,124 @@ namespace graph_tools {
 
         static
         WGraph List(int n_nodes, int n_edges) {
-            packed_edge *edges = new packed_edge [n_edges];
-            float *weights = new float [n_edges];
+            std::vector<packed_edge> edges(n_edges);
+            std::vector<float> weights(n_edges);
             std::vector<NodeID> nodes;
+            std::uniform_real_distribution<float> dist(0.0,1.0);
+            std::default_random_engine gen;            
             nodes.reserve(n_nodes);
 
-            for (int v_i = 0 ; v_i < n_nodes; v_i++)
+            for (int v_i = 0 ; v_i < n_nodes; v_i++) {
                 nodes.push_back(v_i);
-
-            // the root is always 0
-            std::random_shuffle(nodes.begin()+1,nodes.end());
-            std::uniform_real_distribution<float> dist(0.0,0.1);
-            std::default_random_engine generator;
-            
-            // pick the first n to be the chain
-            write_edge(&edges[0], nodes[0], nodes[1]);
-            weights[0] = dist(generator);
-
-            // make chain
-            for (int e_i = 1; e_i < n_edges; e_i++) {
-                write_edge(&edges[e_i], nodes[e_i], nodes[e_i+1]);            
-                weights[e_i] = dist(generator);
             }
 
-            delete [] edges;
-            delete [] weights;
-            return WGraph::FromGraph500FromBuffer(edges, weights, n_edges);
+            // make chain
+            for (int e_i = 0; e_i < n_edges; e_i++) {
+                write_edge(&edges[e_i], nodes[e_i%n_nodes], nodes[(e_i+1)%n_nodes]);
+                weights[e_i] = dist(gen);
+            }
+
+            return WGraph::FromGraph500Buffer(&edges[0], &weights[0], n_edges);
+        }
+
+        static WGraph BalancedTree(int scale, int nedges) {
+            std::vector<NodeID> nodes;
+            std::vector<packed_edge> edges;
+            std::vector<float> weights;
+            std::uniform_real_distribution<float> dist(0.0,1.0);
+            std::default_random_engine gen;
+            //int64_t nedges = (1<<scale)-2;
+            int nnodes = 1<<scale;
+            
+            nodes.reserve(nnodes);
+            edges.reserve(nedges);
+            weights.reserve(nedges);
+
+            for (NodeID i = 0; i < (1<<scale); i++)
+                nodes.push_back(i);
+
+            // shuffle - keep 0 in place
+            std::random_shuffle(nodes.begin()+1, nodes.end());
+
+            for (NodeID e_i = 0; e_i < nedges; e_i++) {
+                write_edge(&edges[e_i], nodes[(e_i/2) % nnodes], nodes[(e_i+1) % nnodes]);
+                weights[e_i] = dist(gen);
+            }
+
+            return WGraph::FromGraph500Buffer(&edges[0], &weights[0], nedges);
+        }
+
+        static WGraph FromGraph500Data(const Graph500Data &data, float *weights, bool transpose = false) {
+            return WGraph::FromGraph500Buffer(data._edges, weights, data._nedges, transpose);
+        }
+
+        static WGraph Generate(int scale, int64_t nedges, bool transpose = false, uint64_t seed1 = 2, uint64_t seed2 = 3) {
+            
+            std::vector<float> weights;
+            std::uniform_real_distribution<float> dist(0.0,1.0);
+            std::default_random_engine gen;
+            for (int64_t i = 0; i < nedges; i++)
+                weights.push_back(dist(gen));
+            
+            return WGraph::FromGraph500Data(Graph500Data::Generate(scale, nedges, seed1, seed2), &weights[0], transpose);
+        }
+        
+        std::string to_string() const {
+            std::stringstream ss;
+            for (NodeID v = 0; v < num_nodes(); v++) {
+                ss << v << " : ";
+                NodeID dst_0 = _offsets[v];
+                NodeID dst_n = _degrees[v];
+                for (NodeID dst_i = 0; dst_i < dst_n; dst_i++) {
+                    float  w   = _weights[dst_0+dst_i];
+                    NodeID dst = _neighbors[dst_0+dst_i];
+                    ss << "(" << v << "," << dst << "," << w << "), ";
+                }
+                ss << "\n";
+            }
+            return ss.str();
+        }
+
+        static int Test(int argc, char* argv[]) {
+            {
+                WGraph wg = WGraph::List(8,8);
+                std::cout << wg.to_string() << std::endl;
+            }
+            {
+                WGraph wg = WGraph::List(32,32);
+                std::cout << wg.to_string() << std::endl;
+            }
+            {
+                WGraph wg = WGraph::List(16,8);
+                std::cout << wg.to_string() << std::endl;
+            }
+            {
+                WGraph wg = WGraph::List(8,16);
+                std::cout << wg.to_string() << std::endl;
+            }
+            {
+                WGraph wg = WGraph::List(8,8);
+                std::cout << wg.to_string() << std::endl;
+                std::cout << wg.transpose().to_string() << std::endl;
+            }
+            {
+                WGraph wg = WGraph::BalancedTree(4, 4);
+                std::cout << wg.to_string() << std::endl;
+            }
+            {
+                WGraph wg = WGraph::BalancedTree(10, 254);
+                std::cout << wg.to_string() << std::endl;
+            }
+            {
+                WGraph wg = WGraph::BalancedTree(7, 126);
+                std::cout << wg.to_string() << std::endl;
+            }
+            {
+                WGraph wg = WGraph::Generate(10, 128);
+                std::cout << wg.to_string() << std::endl;
+                std::cout << wg.transpose().to_string() << std::endl;
+            }
+            return 0;
         }
     };
 
