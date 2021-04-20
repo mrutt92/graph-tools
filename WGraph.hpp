@@ -278,7 +278,7 @@ namespace graph_tools {
             std::vector<packed_edge> edges(n_edges);
             std::vector<float> weights(n_edges);
             std::vector<NodeID> nodes;
-            std::uniform_real_distribution<float> dist(0.0,1.0);
+            std::uniform_real_distribution<float> dist(0.99,1.01);
             std::default_random_engine gen;            
             nodes.reserve(n_nodes);
 
@@ -299,7 +299,7 @@ namespace graph_tools {
             std::vector<NodeID> nodes;
             std::vector<packed_edge> edges;
             std::vector<float> weights;
-            std::uniform_real_distribution<float> dist(0.0,1.0);
+            std::uniform_real_distribution<float> dist(0.99,1.01);
             std::default_random_engine gen;
             //int64_t nedges = (1<<scale)-2;
             int nnodes = 1<<scale;
@@ -329,7 +329,7 @@ namespace graph_tools {
         static WGraph Generate(int scale, int64_t nedges, bool transpose = false, uint64_t seed1 = 2, uint64_t seed2 = 3) {
             
             std::vector<float> weights;
-            std::uniform_real_distribution<float> dist(0.0,1.0);
+            std::uniform_real_distribution<float> dist(0.99,1.01);
             std::default_random_engine gen;
             for (int64_t i = 0; i < nedges; i++)
                 weights.push_back(dist(gen));

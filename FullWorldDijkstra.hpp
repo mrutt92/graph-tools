@@ -1,15 +1,15 @@
 #pragma once
 #include <WGraph.hpp>
-#include <queue>
+#include <set>
 #include <vector>
 #include <string>
 #include <iostream>
 #include <Dijkstra.hpp>
 
-class FastDijkstra {
+class FullWorldDijkstra {
 public:
     using WGraph = graph_tools::WGraph;
-    FastDijkstra(const WGraph &wg, int root, int goal) :
+    FullWorldDijkstra(const WGraph &wg, int root, int goal) :
         _wg(wg),
         _root(root),
         _goal(goal),
@@ -32,18 +32,24 @@ public:
         _path[_root] = _root;
         _teps_to_find[_root] = 0;
 
-        auto cmp = [&](int lhs, int rhs) {
-            return _distance[lhs] > _distance[rhs];
-        };
 
-        std::priority_queue<int,std::vector<int>,decltype(cmp)> queue(cmp);
-        queue.push(_root);
+        std::set<int> unvisited;
+        for (int v = 0; v < _wg.num_nodes(); v++)
+            unvisited.insert(v);
 
-        while (!queue.empty()) {
+        while (!unvisited.empty()) {
             // approx. deletion with O(logN)
-            _fp_compares += ceil(log2(queue.size()));
-            int src = queue.top();
-            queue.pop();
+            int minsrc = -1;
+            float mindst = INFINITY;
+            for (int src : unvisited) {
+                if (_distance[src] < mindst) {
+                    minsrc = src;
+                    mindst = _distance[src];
+                }
+                _fp_compares += 1;
+            }
+
+            int src = minsrc;
             if (src == _goal)
                 break;
 
@@ -54,9 +60,6 @@ public:
                 if (_distance[src]+w < _distance[dst]) {
                     _path[dst] = src;
                     _distance[dst] = _distance[src]+w;
-                    // approx. insertion with O(logN)
-                    _fp_compares += queue.size() == 0 ? 0 : ceil(log2(queue.size()));
-                    queue.push(dst);
                 }
 
                 if (_teps_to_find[dst] == -1) {
@@ -67,6 +70,7 @@ public:
                 _fp_compares += 1;
                 _traversed_edges += 1;
             }
+            unvisited.erase(src);
         }
 
         return {_path, _distance};
@@ -100,15 +104,33 @@ public:
 
 
     static int Test(int argc, char *argv[]) {
-        auto wg = WGraph::Uniform(10*1000, 32*1000);
-        Dijkstra dijkstra(wg, 0);
-        dijkstra.run();
-        dijkstra.goal(5.0);
+        std::pair<int,int> graph =
+            {10*1000, 32*1000}
+            //{10*1000, 320*1000}
+            //{20*1000, 500*1000}
+            ;
 
-        FastDijkstra fdijkstra(wg, 0, dijkstra.goal());
+        int goal =
+            //8504
+            //2921
+            //3091
+            //1190
+            4604
+            //7550
+            //9199
+            //7550
+            //1504
+            //861
+            ;
+
+        auto wg = WGraph::Uniform(graph.first, graph.second);
+
+        FullWorldDijkstra fdijkstra(wg, 0, goal);
         fdijkstra.run();
         std::cout << "stats:" << std::endl;
         std::cout << fdijkstra.stats_str() << std::endl;
+
+
         return 0;
     }
 
