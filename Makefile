@@ -21,6 +21,7 @@ graphtools-test-modules += FastDijkstra
 graphtools-test-modules += Dijkstra
 graphtools-test-modules += FullWorldDijkstra
 graphtools-test-modules += ListSet
+graphtools-test-modules += SparsePushBFS
 graphtools-tests := $(addsuffix -test,$(graphtools-test-modules))
 graphtools-tests-sources := $(addsuffix .cpp, $(graphtools-tests))
 
