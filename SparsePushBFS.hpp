@@ -1,5 +1,7 @@
 #include <vector>
 #include <set>
+#include <sstream>
+#include <fstream>
 #include "WGraph.hpp"
 namespace graph_tools {
     class SparsePushBFS {
@@ -62,6 +64,22 @@ namespace graph_tools {
         const std::set<int>& visited_in() const { return _visited_in; }
         const std::set<int>& frontier_out() const { return _frontier_out; }
         const std::set<int>& visited_out() const { return _visited_out; }
+        std::string report() const {
+            std::stringstream ss;
+            ss << "input frontier size:  " << _frontier_in.size() << "\n"; 
+            ss << "output frontier size: " << _frontier_out.size() << "\n";
+            ss << "input visited size:   " << _visited_in.size() << "\n";
+            ss << "output visited size:  " << _visited_out.size() << "\n";
+            ss << "traversed_edges:      " << traversed_edges() << "\n";
+            ss << "updates:              " << update() << "\n";
+            return ss.str();
+        }
+
+        void dump(const std::string &fname) {
+            std::ofstream f(fname);
+            f << report();            
+        }
+        
         int traversed_edges() const { return _traversed_edges; }
         int update() const { return _updates; }
 
