@@ -326,6 +326,19 @@ namespace graph_tools {
             return WGraph::FromGraph500Buffer(data._edges, weights, data._nedges, transpose);
         }
 
+
+        static WGraph FromGraph500Data(const Graph500Data &data, bool transpose = false) {
+            std::vector<float> weights;
+            weights.reserve(data.num_edges());
+            std::uniform_real_distribution<float> dist(0.99,1.01);
+            std::default_random_engine gen;
+
+            for (int i = 0; i < data.num_edges(); i++)
+                weights.push_back(dist(gen));
+
+            return WGraph::FromGraph500Buffer(data._edges, &weights[0], data._nedges, transpose);
+        }
+
         static WGraph Generate(int scale, int64_t nedges, bool transpose = false, uint64_t seed1 = 2, uint64_t seed2 = 3) {
             
             std::vector<float> weights;
