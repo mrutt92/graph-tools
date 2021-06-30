@@ -12,6 +12,8 @@
 #include <sys/stat.h>
 #include <assert.h>
 #include <fstream>
+#include <algorithm>
+
 namespace graph_tools {
 
     class Graph500Data {
@@ -154,6 +156,90 @@ namespace graph_tools {
 
             return data;
         }
+
+        static Graph500Data Uniform(int n_nodes, int n_edges) {
+            packed_edge *edges = reinterpret_cast<packed_edge*>(malloc(sizeof(packed_edge)*n_edges));
+            std::vector<int> nodes;
+
+            nodes.reserve(n_nodes);
+
+            for (int i = 0; i < n_nodes; i++)
+                nodes.push_back(i);
+
+            std::random_shuffle(nodes.begin(), nodes.end());
+
+            int degree = n_edges/n_nodes;
+            int rem = n_edges%n_nodes;
+
+            int e_i = 0;
+            int dst_i = 0;
+            for (int src = 0; src < n_nodes; src++){
+                for (int e = 0; e < degree; e++) {
+                    write_edge(&edges[e_i], src, nodes[(dst_i++%n_nodes)]);
+                    e_i++;
+                }
+            }
+
+            // fill out the remainder
+            for (int e = 0; e < rem; e++) {
+                int src = nodes[dst_i++%n_nodes];
+                int dst = nodes[dst_i++%n_nodes];
+                write_edge(&edges[e_i], src, dst);
+                e_i++;
+            }
+
+            Graph500Data data;
+            data._edges = edges;
+            data._nedges = n_edges;
+
+            return data;
+        }
+
+        static Graph500Data List(int n_nodes, int n_edges) {
+            packed_edge *edges = reinterpret_cast<packed_edge*>(malloc(sizeof(packed_edge)*n_edges));
+            std::vector<int> nodes;
+            nodes.reserve(n_nodes);
+
+            for (int v_i = 0 ; v_i < n_nodes; v_i++) {
+                nodes.push_back(v_i);
+            }
+
+            // make chain
+            for (int e_i = 0; e_i < n_edges; e_i++) {
+                write_edge(&edges[e_i], nodes[e_i%n_nodes], nodes[(e_i+1)%n_nodes]);
+            }
+
+            Graph500Data data;
+            data._edges = edges;
+            data._nedges = n_edges;
+            return data;
+        }
+
+        static Graph500Data BalancedTree(int scale, int nedges) {
+            std::vector<int> nodes;
+            packed_edge *edges = reinterpret_cast<packed_edge*>(malloc(sizeof(packed_edge)*nedges));
+
+            //int64_t nedges = (1<<scale)-2;
+            int nnodes = 1<<scale;
+
+            nodes.reserve(nnodes);
+
+            for (int i = 0; i < (1<<scale); i++)
+                nodes.push_back(i);
+
+            // shuffle - keep 0 in place
+            std::random_shuffle(nodes.begin()+1, nodes.end());
+
+            for (int e_i = 0; e_i < nedges; e_i++) {
+                write_edge(&edges[e_i], nodes[(e_i/2) % nnodes], nodes[(e_i+1) % nnodes]);
+            }
+
+            Graph500Data data;
+            data._edges = edges;
+            data._nedges = nedges;
+            return data;
+        }
+
 
         packed_edge *begin() { return _edges; }
         packed_edge *end()   { return _edges + _nedges; }

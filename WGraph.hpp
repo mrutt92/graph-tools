@@ -235,91 +235,44 @@ namespace graph_tools {
          */
         static
         WGraph Uniform(int n_nodes, int n_edges) {
-            std::vector<packed_edge> edges(n_edges);
             std::vector<float> weights(n_edges);
-            std::vector<NodeID> nodes;
             std::uniform_real_distribution<float> dist(0.99,1.01);
             std::uniform_int_distribution<int> idist(0, n_nodes-1);
-            std::default_random_engine gen;            
-            nodes.reserve(n_nodes);
+            std::default_random_engine gen;
 
-            for (int i = 0; i < n_nodes; i++)
-                nodes.push_back(i);
+            for (int i = 0; i < n_edges; i++)
+                weights[i] = dist(gen);
 
-            std::random_shuffle(nodes.begin(), nodes.end());
-            
-            int degree = n_edges/n_nodes;
-            int rem = n_edges%n_nodes;
-
-            int e_i = 0;
-            int dst_i = 0;
-            for (int src = 0; src < n_nodes; src++){
-                for (int e = 0; e < degree; e++) {
-                    write_edge(&edges[e_i], src, nodes[(dst_i++%n_nodes)]);
-                    weights[e_i] = dist(gen);
-                    e_i++;
-                }
-            }
-
-            // fill out the remainder
-            for (int e = 0; e < rem; e++) {
-                int src = nodes[dst_i++%n_nodes];
-                int dst = nodes[dst_i++%n_nodes];
-                write_edge(&edges[e_i], src, dst);
-                weights[e_i] = dist(gen);
-                e_i++;
-            }
-            
-            return WGraph::FromGraph500Buffer(&edges[0], &weights[0], n_edges);
+            return WGraph::FromGraph500Data(Graph500Data::Uniform(n_nodes, n_edges), &weights[0]);
         }
 
+        /**
+         * Graph with shape of linked list
+         */ 
         static
         WGraph List(int n_nodes, int n_edges) {
-            std::vector<packed_edge> edges(n_edges);
             std::vector<float> weights(n_edges);
-            std::vector<NodeID> nodes;
             std::uniform_real_distribution<float> dist(0.99,1.01);
-            std::default_random_engine gen;            
-            nodes.reserve(n_nodes);
+            std::uniform_int_distribution<int> idist(0, n_nodes-1);
+            std::default_random_engine gen;
 
-            for (int v_i = 0 ; v_i < n_nodes; v_i++) {
-                nodes.push_back(v_i);
-            }
+            for (int i = 0; i < n_edges; i++)
+                weights[i] = dist(gen);
 
-            // make chain
-            for (int e_i = 0; e_i < n_edges; e_i++) {
-                write_edge(&edges[e_i], nodes[e_i%n_nodes], nodes[(e_i+1)%n_nodes]);
-                weights[e_i] = dist(gen);
-            }
-
-            return WGraph::FromGraph500Buffer(&edges[0], &weights[0], n_edges);
+            return WGraph::FromGraph500Data(Graph500Data::List(n_nodes, n_edges), &weights[0]);
         }
 
         static WGraph BalancedTree(int scale, int nedges) {
-            std::vector<NodeID> nodes;
-            std::vector<packed_edge> edges;
-            std::vector<float> weights;
-            std::uniform_real_distribution<float> dist(0.99,1.01);
-            std::default_random_engine gen;
-            //int64_t nedges = (1<<scale)-2;
             int nnodes = 1<<scale;
-            
-            nodes.reserve(nnodes);
-            edges.reserve(nedges);
-            weights.reserve(nedges);
+            std::vector<float> weights(nedges);
+            std::uniform_real_distribution<float> dist(0.99,1.01);
+            std::uniform_int_distribution<int> idist(0, nnodes-1);
+            std::default_random_engine gen;
 
-            for (NodeID i = 0; i < (1<<scale); i++)
-                nodes.push_back(i);
+            for (int i = 0; i < nedges; i++)
+                weights[i] = dist(gen);
 
-            // shuffle - keep 0 in place
-            std::random_shuffle(nodes.begin()+1, nodes.end());
-
-            for (NodeID e_i = 0; e_i < nedges; e_i++) {
-                write_edge(&edges[e_i], nodes[(e_i/2) % nnodes], nodes[(e_i+1) % nnodes]);
-                weights[e_i] = dist(gen);
-            }
-
-            return WGraph::FromGraph500Buffer(&edges[0], &weights[0], nedges);
+            return WGraph::FromGraph500Data(Graph500Data::BalancedTree(scale, nedges), &weights[0]);            
         }
 
         static WGraph FromGraph500Data(const Graph500Data &data, float *weights, bool transpose = false) {
