@@ -134,7 +134,7 @@ namespace graph_tools {
             fread(edge, st.st_size, 1, f);
 
             int64_t nedges = st.st_size/sizeof(*edge);
-            assert(st.st_size % sizeof(*edge));
+            assert(st.st_size % sizeof(*edge) == 0);
 
             fclose(f);
 
