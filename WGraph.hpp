@@ -15,7 +15,7 @@
 #include <vector>
 #include <string>
 #include <sstream>
-
+#include <random>
 namespace graph_tools {
 
     class WGraph {
