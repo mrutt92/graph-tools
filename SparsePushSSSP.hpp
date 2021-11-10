@@ -85,79 +85,12 @@ namespace graph_tools {
 
         static std::vector<SparsePushSSSP> RunSSSP(const WGraph &wg, int root, int iter, bool print = true)
             {
-                std::shared_ptr<WGraph> wgptr = std::shared_ptr<WGraph>(new WGraph(wg));
-                std::shared_ptr<std::set<int>> frontier(new std::set<int>({root}));
-                std::shared_ptr<std::map<int,int>> parent(new std::map<int,int>({{root, root}}));
-                std::shared_ptr<std::map<int,float>> distance(new std::map<int,float>({{root, 0}}));
-
-                std::cout << std::endl << "SSSP on graph with " << wgptr->num_nodes() << " and " << wgptr->num_edges() << std::endl;
-                //std::cout << "graph " << std::endl << wg.to_string() << std::endl;
-
-                std::vector<SparsePushSSSP> sssp_runs;
-                for (int i = 0; i <= iter; i++) {
-                    SparsePushSSSP sssp = SparsePushSSSP(wgptr, frontier, parent, distance);
-                    sssp.run();
-
-                    if (print)
-                        std::cout << "frontier_out (" << i << "): ";
-
-                    if (print)
-                        for (int v : sssp.frontier_out())
-                            std::cout << v << " ";
-
-                    if (print) {
-                        std::cout << std::endl;
-                        std::cout << "traversed edges: " << sssp.traversed_edges() << std::endl;
-                        std::cout << "updates: " << sssp.updates() << std::endl;
-                        std::cout << std::endl;
-                    }
-
-                    sssp_runs.push_back(sssp);
-
-                    frontier = sssp.frontier_out_ptr();
-                    parent = sssp.parent_out_ptr();
-                    distance = sssp.distance_out_ptr();
-                }
-
-                return sssp_runs;
+                return SSSPBase::RunSSSP<SparsePushSSSP>(wg, root, iter, print);
             }
 
-            static SparsePushSSSP RunSSSP_single(const WGraph &wg, int root, int iter, bool print = true)
+        static SparsePushSSSP RunSSSP_single(const WGraph &wg, int root, int iter, bool print = true)
             {
-                std::shared_ptr<WGraph> wgptr = std::shared_ptr<WGraph>(new WGraph(wg));
-                std::shared_ptr<std::set<int>> frontier(new std::set<int>({root}));
-                std::shared_ptr<std::map<int,int>> parent(new std::map<int,int>({{root,root}}));
-                std::shared_ptr<std::map<int,float>> distance(new std::map<int,float>({{root, 0}}));
-
-                std::cout << std::endl << "SSSP on graph with " << wgptr->num_nodes() << " and " << wgptr->num_edges() << std::endl;
-                //std::cout << "graph " << std::endl << wg.to_string() << std::endl;
-
-                SparsePushSSSP sssp_result;
-                for (int i = 0; i <= iter; i++) {
-                    SparsePushSSSP sssp = SparsePushSSSP(wgptr, frontier, parent, distance);
-                    sssp.run();
-
-                    if (print)
-                        std::cout << "frontier_out (" << i << "): ";
-
-                    if (print)
-                        for (int v : sssp.frontier_out())
-                            std::cout << v << " ";
-
-                    if (print) {
-                        std::cout << std::endl;
-                        std::cout << "traversed edges: " << sssp.traversed_edges() << std::endl;
-                        std::cout << "updates: " << sssp.updates() << std::endl;
-                        std::cout << std::endl;
-                    }
-
-                    frontier = sssp.frontier_out_ptr();
-                    parent = sssp.parent_out_ptr();
-                    distance = sssp.distance_out_ptr();
-                    sssp_result = sssp;
-                }
-
-                return sssp_result;
+                return SSSPBase::RunSSSP_single<SparsePushSSSP>(wg, root, iter, print);
             }
 
         static int Test(int argc, char *argv[]) {
