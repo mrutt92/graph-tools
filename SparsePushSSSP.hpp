@@ -9,23 +9,33 @@ namespace graph_tools {
     class SparsePushSSSP {
     public:
         using WGraph = graph_tools::WGraph;
-        SparsePushSSSP() :
-            _wg(nullptr),
-            _traversed_edges(0),
-            _updates(0),
-            _frontier_reads(0) {}
+        SparsePushSSSP()
+            :_wg(nullptr)
+            ,_traversed_edges(0)
+            ,_updates(0)
+            ,_frontier_reads(0) {
+        }
 
-        SparsePushSSSP(const std::shared_ptr<WGraph> &wg,
-                       const std::set<int> &frontier_in,
-                       const std::map<int,int> &parent_in,
-                       const std::map<int,float> &distance_in) :
-            _wg(wg),
-            _distance_in(distance_in),
-            _parent_in(parent_in),
-            _frontier_in(frontier_in),
-            _traversed_edges(0),
-            _updates(0),
-            _frontier_reads(0) {}
+        SparsePushSSSP(
+            const std::shared_ptr<WGraph> &wg
+            ,const std::shared_ptr<std::set<int>> &frontier_in
+            ,const std::shared_ptr<std::map<int,int>> &parent_in
+            ,const std::shared_ptr<std::map<int,float>> &distance_in
+            )
+            :_wg(wg)
+             // inputs
+            ,_distance_in(distance_in)
+            ,_parent_in(parent_in)
+            ,_frontier_in(frontier_in)
+             // outputs
+            ,_distance_out(new std::map<int,float>)
+            ,_parent_out(new std::map<int,int>)
+            ,_frontier_out(new std::set<int>)
+             // stats
+            ,_traversed_edges(0)
+            ,_updates(0)
+            ,_frontier_reads(0) {
+        }
 
         void run() {
             // setup
@@ -39,8 +49,8 @@ namespace graph_tools {
             auto &offs = _wg->get_offsets();
             auto &degs = _wg->get_degrees();
 
-            frontier.reserve(_frontier_in.size());
-            for (int v : _frontier_in)
+            frontier.reserve(frontier_in().size());
+            for (int v : frontier_in())
                 frontier.push_back(v);
 
             for (auto kv : distance_in()) {
@@ -84,28 +94,112 @@ namespace graph_tools {
             }
         }
 
-        const std::map<int,int>& parent_in() const { return _parent_in; }
-        std::map<int,int>& parent_in() { return _parent_in; }
-
-        const std::map<int,int>& parent_out() const { return _parent_out; }
-        std::map<int,int>& parent_out() { return _parent_out; }
-
-        const std::map<int,float>& distance_out() const { return _distance_out; }
-        std::map<int,float>& distance_out() { return _distance_out; }
-
-        const std::map<int,float>& distance_in() const { return _distance_in; }
-        std::map<int,float>& distance_in() { return _distance_in; }
-
-        const std::set<int>& frontier_in() const { return _frontier_in; }
-        std::set<int> & frontier_in() { return _frontier_in; }
-
-        const std::set<int>& frontier_out() const { return _frontier_out; }
-        std::set<int>& frontier_out() { return _frontier_out; }
-
+        /**
+         * parent_in()
+         */
+        std::shared_ptr<const std::map<int,int>>
+        parent_in_ptr() const {
+            return std::const_pointer_cast<const std::map<int,int>>(_parent_in);
+        }
+        std::shared_ptr<std::map<int,int>>
+        parent_in_ptr() {
+            return _parent_in;
+        }
+        const std::map<int,int>&
+        parent_in() const {
+            return *_parent_in;
+        }
+        std::map<int,int>&
+        parent_in() {
+            return *_parent_in;
+        }
+        /**
+         * parent_out()
+         */
+        std::shared_ptr<const std::map<int,int>>
+        parent_out_ptr() const {
+            return std::const_pointer_cast<const std::map<int,int>>(_parent_out);
+        }
+        std::shared_ptr<std::map<int,int>>
+        parent_out_ptr() {
+            return _parent_out;
+        }
+        const std::map<int,int>&
+        parent_out() const {
+            return *_parent_out;
+        }
+        std::map<int,int>&
+        parent_out() {
+            return *_parent_out;
+        }
+        /**
+         * distance_out()
+         */
+        std::shared_ptr<const std::map<int,float>>
+        distance_out_ptr() const {
+            return std::const_pointer_cast<const std::map<int,float>>(_distance_out);
+        }
+        std::shared_ptr<std::map<int,float>>
+        distance_out_ptr() {
+            return _distance_out;
+        }
+        
+        const std::map<int,float>&
+        distance_out() const {
+            return *_distance_out;
+        }
+        std::map<int,float>&
+        distance_out() {
+            return *_distance_out;
+        }
+        /**
+         * distance_in()
+         */
+        const std::map<int,float>&
+        distance_in() const {
+            return *_distance_in;
+        }
+        std::map<int,float>&
+        distance_in() {
+            return *_distance_in;
+        }
+        /**
+         * frontier_in()
+         */
+        const std::set<int>&
+        frontier_in() const {
+            return *_frontier_in;
+        }
+        std::set<int> &
+        frontier_in() {
+            return *_frontier_in;
+        }
+        /**
+         * frontier_out()
+         */
+        std::shared_ptr<const std::set<int>>
+        frontier_out_ptr() const {
+            return std::const_pointer_cast<const std::set<int>>(_frontier_out);
+        }
+        std::shared_ptr<std::set<int>>
+        frontier_out_ptr() {
+            return _frontier_out;
+        }        
+        const std::set<int>&
+        frontier_out() const {
+            return *_frontier_out;
+        }
+        std::set<int>&
+        frontier_out() {
+            return *_frontier_out;
+        }
+       /**
+        * report string for stats
+        */
         std::string report() const {
             std::stringstream ss;
-            ss << "input frontier size:  " << _frontier_in.size() << "\n";
-            ss << "output frontier size: " << _frontier_out.size() << "\n";
+            ss << "input frontier size:  " << frontier_in().size() << "\n";
+            ss << "output frontier size: " << frontier_out().size() << "\n";
             ss << "traversed_edges:      " << traversed_edges() << "\n";
             ss << "updates:              " << updates() << "\n";
             return ss.str();
@@ -122,9 +216,9 @@ namespace graph_tools {
         static std::vector<SparsePushSSSP> RunSSSP(const WGraph &wg, int root, int iter, bool print = true)
             {
                 std::shared_ptr<WGraph> wgptr = std::shared_ptr<WGraph>(new WGraph(wg));
-                std::set<int> frontier = {root};
-                std::map<int,int> parent = {{root, root}};
-                std::map<int,float> distance = {{root, 0}};
+                std::shared_ptr<std::set<int>> frontier(new std::set<int>({root}));
+                std::shared_ptr<std::map<int,int>> parent(new std::map<int,int>({{root, root}}));
+                std::shared_ptr<std::map<int,float>> distance(new std::map<int,float>({{root, 0}}));
 
                 std::cout << std::endl << "SSSP on graph with " << wgptr->num_nodes() << " and " << wgptr->num_edges() << std::endl;
                 //std::cout << "graph " << std::endl << wg.to_string() << std::endl;
@@ -150,9 +244,9 @@ namespace graph_tools {
 
                     sssp_runs.push_back(sssp);
 
-                    frontier = sssp.frontier_out();
-                    parent = sssp.parent_out();
-                    distance = sssp.distance_out();
+                    frontier = sssp.frontier_out_ptr();
+                    parent = sssp.parent_out_ptr();
+                    distance = sssp.distance_out_ptr();
                 }
 
                 return sssp_runs;
@@ -161,9 +255,9 @@ namespace graph_tools {
             static SparsePushSSSP RunSSSP_single(const WGraph &wg, int root, int iter, bool print = true)
             {
                 std::shared_ptr<WGraph> wgptr = std::shared_ptr<WGraph>(new WGraph(wg));
-                std::set<int> frontier = {root};
-                std::map<int,int> parent = {{root,root}};
-                std::map<int,float> distance = {{root, 0}};
+                std::shared_ptr<std::set<int>> frontier(new std::set<int>({root}));
+                std::shared_ptr<std::map<int,int>> parent(new std::map<int,int>({{root,root}}));
+                std::shared_ptr<std::map<int,float>> distance(new std::map<int,float>({{root, 0}}));
 
                 std::cout << std::endl << "SSSP on graph with " << wgptr->num_nodes() << " and " << wgptr->num_edges() << std::endl;
                 //std::cout << "graph " << std::endl << wg.to_string() << std::endl;
@@ -187,9 +281,9 @@ namespace graph_tools {
                         std::cout << std::endl;
                     }
 
-                    frontier = sssp.frontier_out();
-                    parent = sssp.parent_out();
-                    distance = sssp.distance_out();
+                    frontier = sssp.frontier_out_ptr();
+                    parent = sssp.parent_out_ptr();
+                    distance = sssp.distance_out_ptr();
                     sssp_result = sssp;
                 }
 
@@ -205,12 +299,12 @@ namespace graph_tools {
 
     private:
         std::shared_ptr<WGraph> _wg;
-        std::map<int,float> _distance_in;
-        std::map<int,float> _distance_out;
-        std::map<int,int>   _parent_in;
-        std::map<int,int>   _parent_out;
-        std::set<int> _frontier_in;
-        std::set<int> _frontier_out;
+        std::shared_ptr<std::map<int,float>> _distance_in;
+        std::shared_ptr<std::map<int,int>>   _parent_in;
+        std::shared_ptr<std::set<int>>       _frontier_in;        
+        std::shared_ptr<std::map<int,float>> _distance_out;        
+        std::shared_ptr<std::map<int,int>>   _parent_out;
+        std::shared_ptr<std::set<int>>       _frontier_out;
 
         int _traversed_edges;
         int _updates;
