@@ -92,6 +92,23 @@ namespace graph_tools {
             {
                 return SSSPBase::RunSSSP_single<SparsePushSSSP>(wg, root, iter, print);
             }
+        static std::vector<SparsePushSSSP> RunSSSP_until_empty(const WGraph &wg, int root,  bool print = true)
+            {
+                return SSSPBase::RunSSSP_until_empty<SparsePushSSSP>(wg, root, print);
+            }
+
+        template <typename AfterIteration>
+        static SparsePushSSSP RunSSSP_single_until_empty(
+            const WGraph &wg
+            , int root
+            , AfterIteration after
+            ) {
+            return SSSPBase::RunSSSP_single_until_empty<SparsePushSSSP, AfterIteration>(
+                wg
+                , root
+                , after
+                );
+        }
 
         static int Test(int argc, char *argv[]) {
             RunSSSP(WGraph::Uniform(10,40), 0, 0);

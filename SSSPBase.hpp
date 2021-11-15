@@ -104,6 +104,10 @@ namespace graph_tools {
         /**
          * distance_in()
          */
+        std::shared_ptr<const std::map<int,float>>
+        distance_in_ptr() const {
+            return std::const_pointer_cast<const std::map<int,float>>(_distance_in);
+        }
         const std::map<int,float>&
         distance_in() const {
             return *_distance_in;
@@ -115,6 +119,10 @@ namespace graph_tools {
         /**
          * frontier_in()
          */
+        std::shared_ptr<const std::set<int>>
+        frontier_in_ptr() const {
+            return std::const_pointer_cast<const std::set<int>>(_frontier_in);
+        }
         const std::set<int>&
         frontier_in() const {
             return *_frontier_in;
@@ -210,6 +218,80 @@ namespace graph_tools {
             }
 
         template <typename SSSPType>
+        static std::vector<SSSPType> RunSSSP_until_empty(const WGraph &wg, int root, bool print = true)
+            {
+                std::shared_ptr<WGraph> wgptr = std::shared_ptr<WGraph>(new WGraph(wg));
+                std::shared_ptr<std::set<int>> frontier(new std::set<int>({root}));
+                std::shared_ptr<std::map<int,int>> parent(new std::map<int,int>({{root, root}}));
+                std::shared_ptr<std::map<int,float>> distance(new std::map<int,float>({{root, 0}}));
+
+                std::cout << std::endl
+                          << "SSSP on graph with " << wgptr->num_nodes() << " vertices"
+                          << " and " << wgptr->num_edges() << " edges" << std::endl;
+                //std::cout << "graph " << std::endl << wg.to_string() << std::endl;
+
+                std::vector<SSSPType> sssp_runs;
+                int i = 0;
+                while (!frontier->empty()) {
+                    SSSPType sssp = SSSPType(wgptr, frontier, parent, distance);
+                    sssp.run();
+
+                    if (print)
+                        std::cout << "frontier_out (" << i << "): ";
+
+                    if (print)
+                        for (int v : sssp.frontier_out())
+                            std::cout << v << " ";
+
+                    if (print) {
+                        std::cout << std::endl;
+                        std::cout << "traversed edges: " << sssp.traversed_edges() << std::endl;
+                        std::cout << "updates: " << sssp.updates() << std::endl;
+                        std::cout << std::endl;
+                    }
+
+                    sssp_runs.push_back(sssp);
+
+                    frontier = sssp.frontier_out_ptr();
+                    parent = sssp.parent_out_ptr();
+                    distance = sssp.distance_out_ptr();
+                    i++;
+                }
+
+                return sssp_runs;
+            }
+
+        template <typename SSSPType, typename AfterIteration>
+        static SSSPType RunSSSP_single_until_empty(const WGraph &wg, int root, AfterIteration after)
+            {
+                std::shared_ptr<WGraph> wgptr = std::shared_ptr<WGraph>(new WGraph(wg));
+                std::shared_ptr<std::set<int>> frontier(new std::set<int>({root}));
+                std::shared_ptr<std::map<int,int>> parent(new std::map<int,int>({{root,root}}));
+                std::shared_ptr<std::map<int,float>> distance(new std::map<int,float>({{root, 0}}));
+
+                std::cout << std::endl
+                          << "SSSP on graph with " << wgptr->num_nodes() << " nodes "
+                          << " and " << wgptr->num_edges() << " edges" << std::endl;
+
+                SSSPType sssp_result;
+                int i = 0;
+                while (!frontier->empty()) {
+                    SSSPType sssp = SSSPType(wgptr, frontier, parent, distance);
+                    sssp.run();
+                    std::cout << "running iteration " << i << std::endl;
+                    i++;
+                    after(sssp);
+
+                    frontier = sssp.frontier_out_ptr();
+                    parent = sssp.parent_out_ptr();
+                    distance = sssp.distance_out_ptr();
+                    sssp_result = sssp;
+                }
+
+                return sssp_result;
+            }
+
+        template <typename SSSPType>
         static SSSPType RunSSSP_single(const WGraph &wg, int root, int iter, bool print = true)
             {
                 std::shared_ptr<WGraph> wgptr = std::shared_ptr<WGraph>(new WGraph(wg));
@@ -248,7 +330,9 @@ namespace graph_tools {
 
                 return sssp_result;
             }
-    protected:
+
+
+    public:
         int & traversed_edges() { return _traversed_edges; }
         int & updates()  { return _updates; }
         int & frontier_reads () { return _frontier_reads; }
