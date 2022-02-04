@@ -423,7 +423,7 @@ namespace graph_tools {
         // allocate memory for graph
         int* A_idx = (int*) malloc (A_len*sizeof(int));
         int* A_ptr = (int*) malloc ((n+1)*sizeof(int));
-        
+    
         
         char filename_b[FILENAME_SZ];
         strcpy(filename_b, filename_base);
