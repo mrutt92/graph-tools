@@ -6,16 +6,16 @@
 #include "WGraph.hpp"
 
 namespace graph_tools {
-    class SparsePushBFS {
+    class SparsePullBFS {
     public:
         using WGraph = graph_tools::WGraph;
-        SparsePushBFS() :
+        SparsePullBFS() :
             _wg(nullptr),
             _traversed_edges(0),
             _updates(0),
             _frontier_reads(0) {}
 
-        SparsePushBFS(const std::shared_ptr<WGraph> &wg,
+        SparsePullBFS(const std::shared_ptr<WGraph> &wg,
                       const std::set<int> &frontier_in,
                       const std::set<int> &visited_in) :
             _wg(wg),
@@ -27,22 +27,41 @@ namespace graph_tools {
         
         void run() {
             // setup
-            std::vector<int> frontier;
+            std::vector<int> frontier(_wg->num_nodes(), 0);
             std::vector<int> next(_wg->num_nodes(), 9);
             std::vector<int> visited(_wg->num_nodes(), 0);
             auto &neib = _wg->get_neighbors();
             auto &offs = _wg->get_offsets();
             auto &degs = _wg->get_degrees();
             
-            frontier.reserve(_frontier_in.size());
+            
+            
             for (int v : _frontier_in)
-                frontier.push_back(v);
+                frontier[v] = 1;
 
             for (int v : _visited_in)
                 visited[v] = 1;
 
             // run iteration
-            for (int src_i = 0; src_i < frontier.size(); src_i++) {
+            for(int src_i=0; src_i < _wg->num_nodes();src_i++){
+                
+                if(visited[src_i] == 0){
+                    for(int dst_i = 0; dst_i < degs[src_i]; dst_i++){
+                        int dst = neib[offs[src_i]+dst_i];
+                        _traversed_edges++;
+                        if(frontier[dst]==1) {
+                            _updates++;
+                            visited[src_i] = 1;
+                            next[src_i] = 1;
+                            break;
+                        }  
+                    }
+                }    
+            }
+
+
+
+            /*for (int src_i = 0; src_i < frontier.size(); src_i++) {
                 int src = frontier[src_i];
                 _frontier_reads++;
                 
@@ -55,7 +74,7 @@ namespace graph_tools {
                         next[dst] = 1;
                     }
                 }
-            }
+            }*/
 
             for (int v = 0; v < _wg->num_nodes(); v++) {
                 // build frontier_out                
@@ -66,81 +85,6 @@ namespace graph_tools {
                 if (visited[v] == 1)
                     _visited_out.insert(v);
             }
-        }
-
-        void run(int ite) {
-            // setup
-            std::vector<int> frontier_in;
-            std::vector<int> frontier_out;
-            //std::vector<int> next(_wg->num_nodes(), 9);
-            std::vector<int> visited(_wg->num_nodes(), 0);
-            auto &neib = _wg->get_neighbors();
-            auto &offs = _wg->get_offsets();
-            auto &degs = _wg->get_degrees();
-            
-            frontier_in.reserve(_frontier_in.size());
-            for (int v : _frontier_in)
-                frontier_in.push_back(v);
-
-            for (int v : _visited_in)
-                visited[v] = 1;
-
-            for (int i=0; i<ite; i++){    
-                // run iteration
-                for (int src_i = 0; src_i < frontier_in.size(); src_i++) {
-                    int src = frontier_in[src_i];
-                    _frontier_reads++;
-
-                    for (int dst_i = 0; dst_i < degs[src]; dst_i++) {
-                        int dst = neib[offs[src]+dst_i];
-                        _traversed_edges++;
-                        if (visited[dst] == 0) {
-                            _updates++;
-                            visited[dst] = 1;
-                            frontier_out.push_back(dst);
-                            //next[dst] = 1;
-                        }
-                    }
-                }
-
-                if(i<ite-1){
-                    frontier_in.clear();
-                    //for(int k=0; k<_wg->num_nodes(); k++){
-                    //    if(next[k] ==1){
-                    //        frontier_in.push_back(k);
-                    //    }
-                    //}
-                    frontier_in.assign(frontier_out.begin(),frontier_out.end());
-                    frontier_out.clear();
-                    //next.assign(0);
-                    //std::fill(next.begin(),next.end(),0);
-                    //std::cout<<"frontier in size: "<<frontier_in.size()<<std::endl;
-                }
-
-            }
-            for (int v = 0; v < _wg->num_nodes(); v++) {
-                if (visited[v] == 1)
-                    _visited_out.insert(v);
-
-            }
-            
-            _frontier_in.clear();
-            for (int i=0; i<frontier_in.size();i++){
-                _frontier_in.insert(frontier_in[i]);
-            }
-            //std::cout<<"final frontier in size: "<<_frontier_in.size()<<std::endl;
-            for (int i=0; i<frontier_out.size();i++){
-                _frontier_out.insert(frontier_out[i]);
-                visited[frontier_out[i]]=0;
-            }
-            for (int v = 0; v < _wg->num_nodes(); v++) {
-                // build visited_out
-                if (visited[v] == 1)
-                    _visited_in.insert(v);
-                //if (next[v] == 1)
-                //    _frontier_out.insert(v);
-            }
-
         }
 
         const std::set<int>& frontier_in() const { return _frontier_in; }
@@ -174,7 +118,7 @@ namespace graph_tools {
         int traversed_edges() const { return _traversed_edges; }
         int updates() const { return _updates; }
 
-        static std::vector<SparsePushBFS> RunBFS(const WGraph &wg, int root, int iter, bool print = true)
+        static std::vector<SparsePullBFS> RunBFS(const WGraph &wg, int root, int iter, bool print = true)
             {
                 std::shared_ptr<WGraph> wgptr = std::shared_ptr<WGraph>(new WGraph(wg));
                 std::set<int> frontier = {root};
@@ -182,9 +126,9 @@ namespace graph_tools {
                 std::cout << std::endl << "BFS on graph with " << wgptr->num_nodes() << " and " << wgptr->num_edges() << std::endl;
                 //std::cout << "graph " << std::endl << wg.to_string() << std::endl;
 
-                std::vector<SparsePushBFS> bfs_runs;
+                std::vector<SparsePullBFS> bfs_runs;
                 for (int i = 0; i <= iter; i++) {
-                    SparsePushBFS bfs = SparsePushBFS(wgptr, frontier, visited);
+                    SparsePullBFS bfs = SparsePullBFS(wgptr, frontier, visited);
                     bfs.run();
 
                     if (print)
@@ -208,41 +152,6 @@ namespace graph_tools {
                 }
 
                 return bfs_runs;
-            }
-
-            static SparsePushBFS RunBFS_single(const WGraph &wg, int root, int iter, bool print = true)
-            {
-                std::shared_ptr<WGraph> wgptr = std::shared_ptr<WGraph>(new WGraph(wg));
-                std::set<int> frontier = {root};
-                std::set<int> visited = {root};
-                std::cout << std::endl << "BFS on graph with " << wgptr->num_nodes() << " and " << wgptr->num_edges() << std::endl;
-                //std::cout << "graph " << std::endl << wg.to_string() << std::endl;
-
-                SparsePushBFS bfs_result;
-                for (int i = 0; i <= iter; i++) {
-                    SparsePushBFS bfs = SparsePushBFS(wgptr, frontier, visited);
-                    bfs.run();
-
-                    if (print)
-                        std::cout << "frontier_out (" << i << "): ";
-
-                    if (print)
-                        for (int v : bfs.frontier_out())
-                            std::cout << v << " ";
-
-                    if (print) {
-                        std::cout << std::endl;
-                        std::cout << "traversed edges: " << bfs.traversed_edges() << std::endl;
-                        std::cout << "updates: " << bfs.updates() << std::endl;
-                        std::cout << std::endl;
-                    }
-                    
-                    frontier = bfs.frontier_out();
-                    visited = bfs.visited_out();
-                    bfs_result = bfs;
-                }
-
-                return bfs_result;
             }
         
         static int Test(int argc, char *argv[]) {
