@@ -8,8 +8,10 @@ include $(graphtools-dir)/libgenerator.mk
 
 libgraphtools.so-sources += $(graphtools-dir)/Graph500Data.cpp
 libgraphtools.so-sources += $(graphtools-dir)/Graph.cpp
+libgraphtools.so-sources += $(graphtools-dir)/mmio.cpp
 #libgraphtools.so-sources += $(graphtools-dir)/WGraph.cpp
 libgraphtools.so-headers := $(wildcard $(graphtools-dir)/*.hpp)
+libgraphtools.so-headers += $(wildcard $(graphtools-dir)/*.h)
 libgraphtools.so-objects := $(notdir $(libgraphtools.so-sources:.cpp=.o))
 
 # ldflags for executables and libraries that use libgraphtools

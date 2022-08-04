@@ -13,6 +13,7 @@
 #include <assert.h>
 #include <fstream>
 #include <algorithm>
+#include "mmio.h"
 
 namespace graph_tools {
 
@@ -62,6 +63,88 @@ namespace graph_tools {
         void toFile(const std::string & file_name) {
             std::ofstream ofs(file_name);
             ofs.write(reinterpret_cast<char*>(_edges), sizeof(*_edges) * _nedges);
+        }
+
+        static std::pair<Graph500Data, float*>
+        FromMatrixMarketFile(const std::string & file_name) {
+            // open the file
+            MM_typecode matcode;
+            int err;
+            FILE *f = fopen(file_name.c_str(), "r");
+            if (f == NULL) {
+                std::string errm(strerror(errno));
+                throw std::runtime_error("Failed to open '"
+                                         + file_name
+                                         + "': "
+                                         + errm);
+            }
+            // use mm header to read
+            err = mm_read_banner(f, &matcode);
+            if (err != 0) {
+                throw std::runtime_error("Failed to read MM banner");
+            }
+            // coordinate or array?
+            if (!mm_is_sparse(matcode)) {
+                throw std::runtime_error(
+                    "Only sparse inputs"
+                    );
+            }
+            // read the meta data
+            int M, N, nz;
+            err = mm_read_mtx_crd_size(f, &M, &N, &nz);
+            if (err != 0) {
+                throw std::runtime_error(
+                    "Early end of file '"
+                    + file_name
+                    + "'");
+            }
+            // allocate arrays
+            Graph500Data g500;
+            int64_t nedges = (mm_is_symmetric(matcode) ? 2*nz : nz);
+            packed_edge *edges = (packed_edge*)malloc(nedges * sizeof(packed_edge));
+            float *weights = (float*)malloc(nedges * sizeof(float));
+            
+            int e = 0;
+            for (; e < nz; e++) {
+                // scan each line
+                int count;
+                int i, j;
+                float  d;
+                count = fscanf(f, "%d %d %f", &i, &j, &d);
+                if (count != 3) {
+                    throw std::runtime_error(
+                        "Unexpected end-of-file: '"
+                        + file_name
+                        + "'"
+                        );
+                }
+                // matrix market files are 1-indexed
+                i -= 1;
+                j -= 1;
+                write_edge(&edges[e], i, j);
+                weights[e] = d;
+            }
+
+            // make reverse copy of each edge
+            // if symmetric
+            if (mm_is_symmetric(matcode)) {
+                e = 0;
+                for (; e < nz; e++) {
+                    // get from start of the array
+                    int64_t i, j;
+                    float d;
+                    i = get_v0_from_edge(&edges[e]);
+                    j = get_v1_from_edge(&edges[e]);
+                    d = weights[e];
+                    // set new edge
+                    write_edge(&edges[nz+e], j, i);
+                    weights[nz+e] = d;
+                }
+            }
+            // set g500
+            g500._edges = edges;
+            g500._nedges = nedges;
+            return {g500, weights};
         }
 
         static Graph500Data FromASCIIFile(const std::string & file_name) {

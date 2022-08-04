@@ -156,7 +156,9 @@ namespace graph_tools {
             return ss.str();
         }
 
-        /* Builder functions */
+        ///////////////////////
+        // Builder Functions //
+        ///////////////////////
         static WGraph FromGraph500Buffer(packed_edge *edges, float *edge_weights, int64_t nedges, bool transpose = false) {
             // build an adjacency list
             std::map<NodeID, std::list<std::pair<NodeID, float>>> neighbors;
@@ -499,9 +501,9 @@ namespace graph_tools {
         char  density_str[PARA_SZ];
         read_file_float(filename_info, tb_info, mat_m_str,mat_n_str,mat_nnz_str, density_str);
         // parameters
-	    int mat_sz = 1024;
-	    int m = atoi(mat_m_str);
-	    int n = atoi(mat_n_str);
+        int mat_sz = 1024;
+        int m = atoi(mat_m_str);
+        int n = atoi(mat_n_str);
         int A_len  = atoi(mat_nnz_str);
         //for (int i = 0; i < 5; i++) {
         //    printf("tb_info[%d]: %f \n", i, tb_info[i]);
