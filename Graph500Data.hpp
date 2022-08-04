@@ -110,12 +110,27 @@ namespace graph_tools {
                 int count;
                 int i, j;
                 float  d;
-                count = fscanf(f, "%d %d %f", &i, &j, &d);
-                if (count != 3) {
+                if (mm_is_real(matcode)) {
+                    count = fscanf(f, "%d %d %f", &i, &j, &d);
+                    if (count != 3) {
+                        throw std::runtime_error(
+                            "Unexpected end-of-file: '"
+                            + file_name
+                            + "'"
+                            );
+                    }
+                } else if (mm_is_pattern(matcode)) {
+                    count = fscanf(f, "%d %d", &i, &j);
+                    if (count != 2) {
+                        throw std::runtime_error(
+                            "Unexpected end-of-file: '"
+                            + file_name
+                            + "'"
+                            );
+                    }
+                } else {
                     throw std::runtime_error(
-                        "Unexpected end-of-file: '"
-                        + file_name
-                        + "'"
+                        "Only pattern and real matrices supported"
                         );
                 }
                 // matrix market files are 1-indexed
@@ -144,6 +159,7 @@ namespace graph_tools {
             // set g500
             g500._edges = edges;
             g500._nedges = nedges;
+            g500._nodes = nodes;
             return {g500, weights};
         }
 
@@ -171,9 +187,12 @@ namespace graph_tools {
             }
 
             // read each line
+            int64_t n = 0;
             std::vector<packed_edge> edges;
             int64_t v0, v1;
             while (fscanf(f, "%" SCNd64 " %" SCNd64 "", &v0, &v1) == 2) {
+                n = std::max(n, v0+1);
+                n = std::max(n, v1+1);
                 packed_edge e;
                 write_edge(&e, v0, v1);
                 edges.push_back(e);
@@ -185,6 +204,7 @@ namespace graph_tools {
 
             memcpy(e, &edges[0], sizeof(*e) * edges.size());
             Graph500Data data(e, edges.size());
+            data._nodes = n;
             return data;
         }
 
@@ -223,7 +243,15 @@ namespace graph_tools {
 
             fclose(f);
 
-            return Graph500Data(edge, nedges);
+            int64_t n = 0;
+            for (int e = 0; e < nedges; e++) {
+                n = std::max(n, get_v0_from_edge(&edge[e]));
+                n = std::max(n, get_v1_from_edge(&edge[e]));
+            }
+
+            Graph500Data gdata(edge, nedges);
+            gdata._nodes = n;
+            return gdata;
         }
 
         static Graph500Data Generate(int scale, int64_t nedges, uint64_t seed1 = 2, uint64_t seed2 = 3) {
@@ -236,7 +264,7 @@ namespace graph_tools {
             Graph500Data data;
             data._edges = result;
             data._nedges = rnedges;
-
+            data._nodes = 1<<scale;
             return data;
         }
 
@@ -274,7 +302,7 @@ namespace graph_tools {
             Graph500Data data;
             data._edges = edges;
             data._nedges = n_edges;
-
+            data._nodes = n_nodes;
             return data;
         }
 
@@ -295,6 +323,7 @@ namespace graph_tools {
             Graph500Data data;
             data._edges = edges;
             data._nedges = n_edges;
+            data._nodes = n_nodes;
             return data;
         }
 
@@ -318,6 +347,7 @@ namespace graph_tools {
             }
 
             Graph500Data data;
+            data,_nodes = nnodes;
             data._edges = edges;
             data._nedges = nedges;
             return data;
@@ -328,10 +358,12 @@ namespace graph_tools {
         packed_edge *end()   { return _edges + _nedges; }
 
         int64_t num_edges() const { return _nedges; }
+        int64_t num_nodes() const { return _nodes; }
 
     private:
         packed_edge * _edges;
         int64_t _nedges;
+        int64_t _nodes;
 
     public:
 

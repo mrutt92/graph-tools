@@ -159,7 +159,7 @@ namespace graph_tools {
         ///////////////////////
         // Builder Functions //
         ///////////////////////
-        static WGraph FromGraph500Buffer(packed_edge *edges, float *edge_weights, int64_t nedges, bool transpose = false) {
+        static WGraph FromGraph500Buffer(packed_edge *edges, float *edge_weights, int64_t nedges, int64_t nodes, bool transpose = false) {
             // build an adjacency list
             std::map<NodeID, std::list<std::pair<NodeID, float>>> neighbors;
             for (int64_t i = 0; i < nedges; i++) {
@@ -758,7 +758,7 @@ namespace graph_tools {
         }
 
         static WGraph FromGraph500Data(const Graph500Data &data, float *weights, bool transpose = false) {
-            return WGraph::FromGraph500Buffer(data._edges, weights, data._nedges, transpose);
+            return WGraph::FromGraph500Buffer(data._edges, weights, data._nedges, data._nodes, transpose);
         }
 
 
@@ -771,7 +771,7 @@ namespace graph_tools {
             for (int i = 0; i < data.num_edges(); i++)
                 weights.push_back(dist(gen));
 
-            return WGraph::FromGraph500Buffer(data._edges, &weights[0], data._nedges, transpose);
+            return WGraph::FromGraph500Buffer(data._edges, &weights[0], data._nedges, data._nodes, transpose);
         }
 
         static WGraph Generate(int scale, int64_t nedges, bool transpose = false, uint64_t seed1 = 2, uint64_t seed2 = 3) {
