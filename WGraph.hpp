@@ -159,75 +159,71 @@ namespace graph_tools {
         ///////////////////////
         // Builder Functions //
         ///////////////////////
-        static WGraph FromGraph500Buffer(packed_edge *edges, float *edge_weights, int64_t nedges, int64_t nodes, bool transpose = false) {
-            // build an adjacency list
-            std::map<NodeID, std::list<std::pair<NodeID, float>>> neighbors;
-            for (int64_t i = 0; i < nedges; i++) {
-                packed_edge &e = edges[i];
-                float w = edge_weights[i];
-                NodeID src, dst;
-                if (!transpose) {
-                    src = static_cast<NodeID>(get_v0_from_edge(&e));
-                    dst = static_cast<NodeID>(get_v1_from_edge(&e));
-                } else {
-                    src = static_cast<NodeID>(get_v1_from_edge(&e));
-                    dst = static_cast<NodeID>(get_v0_from_edge(&e));
-                }
+        static WGraph FromGraph500Buffer(
+            packed_edge *edges
+            ,float *edge_weights
+            ,int64_t nedges
+            ,int64_t nodes
+            ,bool transpose = false
+            ) {
+            // construct edge array and offsets
+            std::vector<NodeID> degree (nodes+1, 0);
+            std::vector<NodeID> offsets (nodes+1, 0);
+            std::vector<std::pair<NodeID,float>> tmp_arcs (nedges);
+            std::vector<NodeID> arcs (nedges);
+            std::vector<float>  weights (nedges);
 
-                auto rslt = neighbors.find(src);
-                if (rslt == neighbors.end()) {
-                    neighbors.insert({src, {{dst, w}}});
+            // degrees
+            std::vector<NodeID> pos(nedges, 0);
+            for (int e = 0; e < nedges; e++) {
+                int mjr, mnr;
+                if (transpose) {
+                    mjr = get_v1_from_edge(&edges[e]);
+                    mnr = get_v0_from_edge(&edges[e]);
                 } else {
-                    auto & adjl = rslt->second;
-                    adjl.push_back({dst,w});
+                    mjr = get_v0_from_edge(&edges[e]);
+                    mnr = get_v1_from_edge(&edges[e]);
                 }
+                pos[e] = degree[mjr]++;                
+            }
+
+            // offsets
+            int sum = 0;
+            for (int v = 0; v < offsets.size(); v++) {
+                offsets[v] = sum;
+                sum += degree[v];
+            }
+
+            // arcs + weights
+            for (int e = 0; e < nedges; e++) {
+                int mjr, mnr;
+                if (transpose) {
+                    mjr = get_v1_from_edge(&edges[e]);
+                    mnr = get_v0_from_edge(&edges[e]);
+                } else {
+                    mjr = get_v0_from_edge(&edges[e]);
+                    mnr = get_v1_from_edge(&edges[e]);
+                }
+                tmp_arcs[offsets[mjr] + pos[e]] = { mnr, edge_weights[e] };
+            }
+
+            // sort
+            for (int v = 0; v < nodes; v++) {
+                int begin = offsets[v];
+                int end = begin + degree[v];
+                std::sort(tmp_arcs.begin()+begin, tmp_arcs.begin()+end,
+                          [=](const std::pair<NodeID,float> &lhs, const std::pair<NodeID,float> &rhs){
+                              return lhs.first < rhs.first;
+                          });
+            }
+
+            // copy
+            for (int e = 0; e < nedges; e++) {
+                arcs[e] = tmp_arcs[e].first;
+                weights[e] = tmp_arcs[e].second;
             }
             
-            // construct edge array and offsets
-            std::vector<NodeID> degree;
-            std::vector<NodeID> offsets;
-            std::vector<NodeID> arcs;
-            std::vector<float>  weights;
-            NodeID maxv = 0;
-
-            for (auto pair : neighbors) {
-                NodeID src = pair.first;
-                auto & adjl = pair.second;
-
-                // sort the dst nodes
-                //adjl.sort();
-
-                // fill in gaps
-                while (src > static_cast<NodeID>(offsets.size())) {
-                    offsets.push_back(arcs.size());
-                    degree.push_back(0);
-                }
-
-                // set the current offset
-                offsets.push_back(arcs.size());
-                degree.push_back(adjl.size());
-
-                // add dst nodes
-                for (std::pair<NodeID,float> e : adjl) {
-                    NodeID dst = e.first;
-                    float  w = e.second;
-                    //std::cout << src << ","  << dst << std::endl;
-                    maxv = std::max(dst, maxv);
-                    arcs.push_back(dst);
-                    weights.push_back(w);
-                }
-
-                maxv = std::max(src, maxv);
-            }
-
-            // fill out the rest of the offset list
-            while (maxv >= static_cast<NodeID>(offsets.size())) {
-                offsets.push_back(arcs.size());
-                degree.push_back(0);
-            }
-
             WGraph g;
-
             g._neighbors = std::move(arcs);
             g._offsets   = std::move(offsets);
             g._degrees   = std::move(degree);
@@ -743,7 +739,7 @@ namespace graph_tools {
 
             return WGraph::FromGraph500Data(Graph500Data::List(n_nodes, n_edges), &weights[0]);
         }
-
+#if 0
         static WGraph BalancedTree(int scale, int nedges) {
             int nnodes = 1<<scale;
             std::vector<float> weights(nedges);
@@ -756,7 +752,7 @@ namespace graph_tools {
 
             return WGraph::FromGraph500Data(Graph500Data::BalancedTree(scale, nedges), &weights[0]);            
         }
-
+#endif
         static WGraph FromGraph500Data(const Graph500Data &data, float *weights, bool transpose = false) {
             return WGraph::FromGraph500Buffer(data._edges, weights, data._nedges, data._nodes, transpose);
         }
@@ -823,6 +819,7 @@ namespace graph_tools {
                 std::cout << wg.to_string() << std::endl;
                 std::cout << wg.transpose().to_string() << std::endl;
             }
+#if 0
             {
                 WGraph wg = WGraph::BalancedTree(4, 4);
                 std::cout << wg.to_string() << std::endl;
@@ -835,6 +832,7 @@ namespace graph_tools {
                 WGraph wg = WGraph::BalancedTree(7, 126);
                 std::cout << wg.to_string() << std::endl;
             }
+#endif
             {
                 WGraph wg = WGraph::Generate(10, 128);
                 std::cout << wg.to_string() << std::endl;

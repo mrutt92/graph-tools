@@ -22,7 +22,7 @@ namespace graph_tools {
         friend class Graph;
         friend class WGraph;
         Graph500Data(packed_edge *edges = NULL, int64_t nedges = 0) :
-            _edges(edges), _nedges(nedges) {}
+            _edges(edges), _nedges(nedges), _nodes(0) {}
 
         ~Graph500Data() {
             if (_edges != NULL) free(_edges);
@@ -34,6 +34,7 @@ namespace graph_tools {
                 throw std::bad_alloc();
             memcpy(_edges, other._edges, other._nedges);
             _nedges = other._nedges;
+            _nodes = other._nodes;
         }
 
         Graph500Data & operator=(const Graph500Data &other) {
@@ -42,21 +43,26 @@ namespace graph_tools {
                 throw std::bad_alloc();
             memcpy(_edges, other._edges, other._nedges);
             _nedges = other._nedges;
+            _nodes = other._nodes;
             return *this;
         }
 
         Graph500Data(Graph500Data &&other) {
             _edges = other._edges;
             _nedges = other._nedges;
+            _nodes = other._nodes;
             other._edges = NULL;
             other._nedges = 0;
+            other._nodes = 0;
         }
 
         Graph500Data & operator=(Graph500Data &&other) {
             _edges = other._edges;
             _nedges = other._nedges;
+            _nodes = other._nodes;
             other._edges = NULL;
             other._nedges = 0;
+            other._nodes = 0;
             return *this;
         }
 
@@ -159,7 +165,7 @@ namespace graph_tools {
             // set g500
             g500._edges = edges;
             g500._nedges = nedges;
-            g500._nodes = nodes;
+            g500._nodes = M;
             return {g500, weights};
         }
 
@@ -327,6 +333,7 @@ namespace graph_tools {
             return data;
         }
 
+#if 0
         static Graph500Data BalancedTree(int scale, int nedges) {
             std::vector<int> nodes;
             packed_edge *edges = reinterpret_cast<packed_edge*>(malloc(sizeof(packed_edge)*nedges));
@@ -346,13 +353,11 @@ namespace graph_tools {
                 write_edge(&edges[e_i], nodes[(e_i/2) % nnodes], nodes[(e_i+1) % nnodes]);
             }
 
-            Graph500Data data;
-            data,_nodes = nnodes;
-            data._edges = edges;
-            data._nedges = nedges;
-            return data;
+            Graph500Data gdata(edges, nedges);
+            gdata,_nodes = nnodes;
+            return gdata;
         }
-
+#endif
 
         packed_edge *begin() { return _edges; }
         packed_edge *end()   { return _edges + _nedges; }
